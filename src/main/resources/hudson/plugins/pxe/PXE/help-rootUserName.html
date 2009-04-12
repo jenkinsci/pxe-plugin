@@ -1,0 +1,21 @@
+<div>
+    PXE boot support for slaves require Hudson to listen to UDP port 67 (DHCP) and 69 (TFTP).
+    On Unix process, doing this requires the root access to the system, hence you need to give
+    us the root username and password.
+
+    <ul>
+        <li>
+        If you already run Hudson as root, this field shall be left empty.
+        <li>
+        If the user that Hudson currently runs already has sufficient priviledges to open such UDP ports,
+        this field shall be left empty. 
+        <li>
+        If your current user can
+        <a href="http://linux-tips.org/article/18/passwordless-sudo-setup">"sudo" without password</a> or
+        <a href="http://developers.sun.com/developer/technicalArticles/opensolaris/pfexec.html">"pfexec"</a>
+        into root, this field shall be left empty.
+        <li>
+        If your system has another user that acts as root, specify that user name.
+        Otherwise put "root" here.
+    </ul>
+</div>
