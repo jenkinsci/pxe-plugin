@@ -50,13 +50,13 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
     }
 
     /**
-     * All registered boot images exposed for UI.
+     * All registered descriptors exposed for UI
      */
-    public Collection<BootImage> getBootImages() {
-        return BootImage.all();
+    public Collection<BootConfigurationDescriptor> getDescriptors() {
+        return BootConfiguration.all();
     }
 
-    public DescribableList<BootConfiguration,BootImage> getBootConfigurations() {
+    public DescribableList<BootConfiguration, BootConfigurationDescriptor> getBootConfigurations() {
         return getPlugin().getBootConfigurations();
     }
 
@@ -83,7 +83,7 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         BulkChange bc = new BulkChange(plugin);
         try {
             plugin.setRootAccount(form.getString("rootUserName"),Secret.fromString(form.getString("rootPassword")));
-            getBootConfigurations().rebuildHetero(req,form,getBootImages(),"configuration");
+            getBootConfigurations().rebuildHetero(req,form,getDescriptors(),"configuration");
         } catch (FormException e) {
             throw new ServletException(e);
         } finally {

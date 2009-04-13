@@ -44,8 +44,8 @@ THE SOFTWARE.
         <f:section title="${%Boot Configurations}">
           <f:block>
             <f:hetero-list name="configuration" hasHeader="true"
-                           descriptors="${it.bootImages}"
-                           items="${it.configurations}"
+                           descriptors="${it.descriptors}"
+                           items="${it.bootConfigurations}"
                            addCaption="${%Add Boot Configuration}"/>
           </f:block>
         </f:section>

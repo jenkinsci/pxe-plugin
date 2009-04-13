@@ -5,6 +5,7 @@ import hudson.Util;
 import hudson.model.Hudson;
 import hudson.model.TaskListener;
 import hudson.os.SU;
+import hudson.remoting.VirtualChannel;
 import hudson.util.DescribableList;
 import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
@@ -18,14 +19,19 @@ import java.io.IOException;
 public class PluginImpl extends Plugin {
     private String rootUserName;
     private Secret rootPassword;
-    private final DescribableList<BootConfiguration,BootImage> bootConfigurations = new DescribableList<BootConfiguration, BootImage>(this);
+    private VirtualChannel channel;
+    private final DescribableList<BootConfiguration, BootConfigurationDescriptor> bootConfigurations = new DescribableList<BootConfiguration, BootConfigurationDescriptor>(this);
 
+    /**
+     * Initialization needs to happen after all the boot image plugins are loaded, so {@link #start()} won't do.
+     */
     @Override
-    public void start() throws Exception {
+    public void postInitialize() throws Exception {
         load();
 
         TaskListener listener = new StreamTaskListener(getLogFile());
-        SU.executeAsync(listener,rootUserName,rootPassword==null?null:rootPassword.toString(),new PXEBootProcess(new PathResolverImpl()));
+        channel = SU.start(listener, rootUserName, rootPassword == null ? null : rootPassword.toString());
+        channel.callAsync(new PXEBootProcess(new PathResolverImpl()));
     }
 
     public File getLogFile() {
@@ -40,7 +46,7 @@ public class PluginImpl extends Plugin {
         return rootPassword;
     }
 
-    public DescribableList<BootConfiguration,BootImage> getBootConfigurations() {
+    public DescribableList<BootConfiguration, BootConfigurationDescriptor> getBootConfigurations() {
         return bootConfigurations;
     }
 
@@ -48,5 +54,9 @@ public class PluginImpl extends Plugin {
         this.rootUserName = Util.fixEmptyAndTrim(userName);
         this.rootPassword = password;
         save();
+    }
+
+    public VirtualChannel getChannel() {
+        return channel;
     }
 }
