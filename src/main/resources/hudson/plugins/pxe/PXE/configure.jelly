@@ -32,12 +32,23 @@ THE SOFTWARE.
       <j:set var="instance" value="${it}" />
       <j:set var="descriptor" value="${it.descriptor}" />
       <f:form method="post" action="configSubmit" name="config">
-        <f:entry title="${%Root Username}" field="rootUserName">
-          <f:textbox />
-        </f:entry>
-        <f:entry title="${%Root Password}" field="rootPassword">
-          <f:password />
-        </f:entry>
+        <f:section title="${%Super-user account information}">
+          <f:entry title="${%Root Username}" field="rootUserName">
+            <f:textbox />
+          </f:entry>
+          <f:entry title="${%Root Password}" field="rootPassword">
+            <f:password />
+          </f:entry>
+        </f:section>
+
+        <f:section title="${%Boot Configurations}">
+          <f:block>
+            <f:hetero-list name="configuration" hasHeader="true"
+                           descriptors="${it.bootImages}"
+                           items="${it.configurations}"
+                           addCaption="${%Add Boot Configuration}"/>
+          </f:block>
+        </f:section>
 
         <f:block>
           <f:submit value="${%Save}" />

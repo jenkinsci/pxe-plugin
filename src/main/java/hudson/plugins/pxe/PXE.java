@@ -1,10 +1,13 @@
 package hudson.plugins.pxe;
 
+import hudson.BulkChange;
 import hudson.Extension;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.ManagementLink;
+import hudson.model.Descriptor.FormException;
+import hudson.util.DescribableList;
 import hudson.util.Secret;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.StaplerProxy;
@@ -14,8 +17,14 @@ import org.kohsuke.stapler.framework.io.LargeText;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.Collection;
 
 /**
+ * This object is bound to "/pxe" and handles all the UI work.
+ *
+ * <p>
+ * The actual configuration is stored in {@link PluginImpl} to reuse the plugin persistence mechanism.
+ *
  * @author Kohsuke Kawaguchi
  */
 @Extension
@@ -33,11 +42,22 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
     }
 
     public String getRootUserName() {
-        return getPlugin().rootUserName;
+        return getPlugin().getRootUserName();
     }
 
     public Secret getRootPassword() {
-        return getPlugin().rootPassword;
+        return getPlugin().getRootPassword();
+    }
+
+    /**
+     * All registered boot images exposed for UI.
+     */
+    public Collection<BootImage> getBootImages() {
+        return BootImage.all();
+    }
+
+    public DescribableList<BootConfiguration,BootImage> getBootConfigurations() {
+        return getPlugin().getBootConfigurations();
     }
 
     /**
@@ -48,6 +68,9 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         return this;
     }
 
+    /**
+     * Access to the singleton {@link PluginImpl} instance.
+     */
     private PluginImpl getPlugin() {
         return Hudson.getInstance().getPlugin(PluginImpl.class);
     }
@@ -57,9 +80,16 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
 
         // persist the plugin setting
         PluginImpl plugin = getPlugin();
-        plugin.rootUserName = form.getString("rootUserName");
-        plugin.rootPassword = Secret.fromString(form.getString("rootPassword"));
-        plugin.save();
+        BulkChange bc = new BulkChange(plugin);
+        try {
+            plugin.setRootAccount(form.getString("rootUserName"),Secret.fromString(form.getString("rootPassword")));
+            getBootConfigurations().rebuildHetero(req,form,getBootImages(),"configuration");
+        } catch (FormException e) {
+            throw new ServletException(e);
+        } finally {
+            bc.commit();
+        }
+
         rsp.sendRedirect(".");
     }
 

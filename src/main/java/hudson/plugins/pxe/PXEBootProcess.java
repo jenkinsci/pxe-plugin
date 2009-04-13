@@ -28,6 +28,12 @@ import java.util.logging.Logger;
  * @author Kohsuke Kawaguchi
  */
 public class PXEBootProcess implements Callable<Void, IOException> {
+    private final PathResolver resolver;
+
+    public PXEBootProcess(PathResolver resolver) {
+        this.resolver = resolver;
+    }
+
     /**
      * List up addresses that we should be listening to.
      */
@@ -64,33 +70,7 @@ public class PXEBootProcess implements Callable<Void, IOException> {
 
         // serve up resources
         LOGGER.info("Starting a TFTP service");
-        TFTPServer tftp = new TFTPServer(new PathResolver() {
-            private final ClassLoader classLoader = PXEBooter.class.getClassLoader();
-            public Data open(final String fileName) throws IOException {
-                if(fileName.equals("pxelinux.cfg/default")) {
-                    // combine all pxelinux.cfg.fragment files into one and serve them
-                    return new Data() {
-                        public InputStream read() throws IOException {
-                            InputStream is = classLoader.getResourceAsStream("tftp/"+fileName);
-                            // merge all fragments
-                            Enumeration<URL> e = classLoader.getResources("pxelinux.cfg.fragment");
-                            while (e.hasMoreElements()) {
-                                URL url = e.nextElement();
-                                is = new SequenceInputStream(is,url.openStream());
-                            }
-                            return is;
-                        }
-                    };
-                }
-
-                // default
-                return new Data() {
-                    public InputStream read() throws IOException {
-                        return classLoader.getResourceAsStream("tftp/"+fileName.replace('\\','/'));
-                    }
-                };
-            }
-        });
+        TFTPServer tftp = new TFTPServer(resolver);
         start(tftp);
 
         return null;
