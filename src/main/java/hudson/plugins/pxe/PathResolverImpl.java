@@ -34,6 +34,8 @@ final class PathResolverImpl implements PathResolver2, Serializable {
         if(fileName.equals("pxelinux.cfg/default")) {
             // combine all pxelinux.cfg.fragment files into one and serve them
             StringBuilder buf = new StringBuilder(IOUtils.toString(getClass().getClassLoader().getResourceAsStream("tftp/"+fileName)));
+            buf.append('\n');
+            
             // merge all fragments
             for (BootConfiguration conf : bootConfigurations)
                 buf.append(conf.getPxeLinuxConfigFragment()).append('\n');
