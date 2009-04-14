@@ -18,6 +18,13 @@ import org.kohsuke.stapler.framework.io.LargeText;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.net.Inet4Address;
+import java.net.SocketException;
+import java.net.NetworkInterface;
+import java.net.InetAddress;
 
 /**
  * This object is bound to "/pxe" and handles all the UI work.
@@ -49,6 +56,10 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         return getPlugin().getRootPassword();
     }
 
+    public String getTftpAddress() {
+        return getPlugin().getTftpAddress();
+    }
+
     /**
      * All registered descriptors exposed for UI
      */
@@ -75,7 +86,7 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         return Hudson.getInstance().getPlugin(PluginImpl.class);
     }
 
-    public void doConfigSubmit(StaplerRequest req, StaplerResponse rsp) throws ServletException, IOException {
+    public void doConfigSubmit(StaplerRequest req, StaplerResponse rsp) throws ServletException, IOException, InterruptedException {
         JSONObject form = req.getSubmittedForm();
 
         // persist the plugin setting
@@ -83,12 +94,15 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         BulkChange bc = new BulkChange(plugin);
         try {
             plugin.setRootAccount(form.getString("rootUserName"),Secret.fromString(form.getString("rootPassword")));
+            plugin.setTftpAddress(form.getString("tftpAddress"));
             getBootConfigurations().rebuildHetero(req,form,getDescriptors(),"configuration");
         } catch (FormException e) {
             throw new ServletException(e);
         } finally {
             bc.commit();
         }
+
+        plugin.restartPXE();
 
         rsp.sendRedirect(".");
     }
@@ -104,10 +118,59 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         return Hudson.getInstance().getDescriptorByType(DescriptorImpl.class);
     }
 
+    /**
+     * Descriptor is only used for UI form bindings
+     */
     @Extension
     public static final class DescriptorImpl extends Descriptor<PXE> {
         public String getDisplayName() {
             return null; // unused
         }
+    }
+
+    public static final class NIC {
+        public final NetworkInterface ni;
+        public final Inet4Address adrs;
+
+        public NIC(NetworkInterface ni, Inet4Address adrs) {
+            this.ni = ni;
+            this.adrs = adrs;
+        }
+
+        public String getName() {
+            String n = ni.getDisplayName();
+            if(n==null) n=ni.getName();
+            return String.format("%s (%s)",
+                    adrs.getHostAddress(),n);
+        }
+    }
+
+    /**
+     * Because DHCP proxy doesn't know which interface the DHCP request was received,
+     * it cannot determine by itself what IP address the PXE client can use to reach us.
+     *
+     * <p>
+     * This method lists all the interfaces 
+     */
+    public List<NIC> getNICs() throws SocketException {
+        List<NIC> r = new ArrayList<NIC>();
+        Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
+        while (e.hasMoreElements()) {
+            NetworkInterface ni =  e.nextElement();
+//            require JDK6
+//            if(ni.isLoopback())     continue;
+//            if(ni.isPointToPoint()) continue;
+
+            Enumeration<InetAddress> adrs = ni.getInetAddresses();
+            while (adrs.hasMoreElements()) {
+                InetAddress a =  adrs.nextElement();
+                if(a.isLoopbackAddress())
+                    continue;
+                if (a instanceof Inet4Address)
+                    r.add(new NIC(ni,(Inet4Address)a));
+            }
+        }
+
+        return r;
     }
 }

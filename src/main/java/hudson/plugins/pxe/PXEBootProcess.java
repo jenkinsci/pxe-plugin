@@ -29,44 +29,17 @@ import java.util.logging.Logger;
  */
 public class PXEBootProcess implements Callable<Void, IOException> {
     private final PathResolver resolver;
+    private final String tftpAddress;
 
-    public PXEBootProcess(PathResolver resolver) {
+    public PXEBootProcess(PathResolver resolver, String tftpAddress) {
         this.resolver = resolver;
-    }
-
-    /**
-     * List up addresses that we should be listening to.
-     */
-    public List<Inet4Address> getAddresses() throws SocketException {
-        List<Inet4Address> r = new ArrayList<Inet4Address>();
-        Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
-        while (e.hasMoreElements()) {
-            NetworkInterface ni =  e.nextElement();
-//            require JDK6
-//            if(ni.isLoopback())     continue;
-//            if(ni.isPointToPoint()) continue;
-
-            Enumeration<InetAddress> adrs = ni.getInetAddresses();
-            while (adrs.hasMoreElements()) {
-                InetAddress a =  adrs.nextElement();
-                if(a.isLoopbackAddress())
-                    continue;
-                if (a instanceof Inet4Address)
-                    r.add((Inet4Address)a);
-            }
-        }
-
-        return r;
+        this.tftpAddress = tftpAddress;
     }
 
     public Void call() throws IOException {
-        // start DHCP proxying on all the interfaces separately, so that each one knows what IP to send to
-        // direct PXE clients as TFTP server.
-        for (Inet4Address a : getAddresses()) {
-            LOGGER.info("Starting a proxy DHCP service on "+a);
-            ProxyDhcpService dhcp = new ProxyDhcpService(a,"pxelinux.0",a);
-            start(dhcp);
-        }
+        // has to bind to the "any address" to receive packets, at least on Ubuntu
+        ProxyDhcpService dhcp = new ProxyDhcpService((Inet4Address)InetAddress.getByName(tftpAddress),"pxelinux.0");
+        start(dhcp);
 
         // serve up resources
         LOGGER.info("Starting a TFTP service");
@@ -74,17 +47,6 @@ public class PXEBootProcess implements Callable<Void, IOException> {
         start(tftp);
 
         return null;
-    }
-
-    private void hang() throws IOException {
-        try {
-            Object o = new Object();
-            synchronized (o) {
-                o.wait();
-            }
-        } catch (InterruptedException e) {
-            throw new IOException2("interrupted",e);
-        }
     }
 
     private void start(Runnable task) {

@@ -32,6 +32,18 @@ THE SOFTWARE.
       <j:set var="instance" value="${it}" />
       <j:set var="descriptor" value="${it.descriptor}" />
       <f:form method="post" action="configSubmit" name="config">
+
+        <j:set var="nics" value="${it.getNICs()}" />
+        <j:if test="${size(nics) gt 1}">
+          <f:entry title="${%NIC}" field="tftpAddress">
+            <select class="setting-input" name="tftpAddress">
+              <j:forEach var="nic" items="${nics}">
+                <f:option selected="${nic.adrs.hostAddress==it.tftpAddress}" value="${nic.adrs.hostAddress}">${nic.name}</f:option>
+              </j:forEach>
+            </select>
+          </f:entry>
+        </j:if>
+
         <f:section title="${%Super-user account information}">
           <f:entry title="${%Root Username}" field="rootUserName">
             <f:textbox />
