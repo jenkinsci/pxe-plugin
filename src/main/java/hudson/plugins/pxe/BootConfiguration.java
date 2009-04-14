@@ -11,6 +11,14 @@ import java.io.IOException;
  * @author Kohsuke Kawaguchi
  */
 public abstract class BootConfiguration implements Describable<BootConfiguration> {
+    /**
+     * For serving dynamic data from TFTP, it's often useful to have an unique ID per {@link BootConfiguration}.
+     * This method provides that.
+     */
+    public String getId() {
+        return String.valueOf(hashCode());
+    }
+
     public BootConfigurationDescriptor getDescriptor() {
         return (BootConfigurationDescriptor) Hudson.getInstance().getDescriptor(getClass());
     }
