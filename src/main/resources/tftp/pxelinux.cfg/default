@@ -1,0 +1,15 @@
+DEFAULT vesamenu.c32
+
+PROMPT 0
+TIMEOUT 0
+
+MENU TITLE Network Installation Options
+
+LABEL autopilot
+    MENU LABEL Chainboot from autopilot
+    KERNEL pxechain.com
+    APPEND 10.5.22.224::boot\x86\pxelinux.0
+
+LABEL abort
+	MENU LABEL Abort installation and boot from HDD
+	KERNEL abortpxe.com
