@@ -23,11 +23,6 @@ import java.net.URL;
  */
 final class PathResolverImpl implements PathResolver2, Serializable {
     public Data open(final String fileName) throws IOException {
-        // static resource first
-        URL res = Hudson.getInstance().getPluginManager().uberClassLoader.getResource("tftp/"+fileName);
-        if(res!=null)
-            return Data.from(res);
-
         // dynamic resources
         DescribableList<BootConfiguration,BootConfigurationDescriptor> bootConfigurations = Hudson.getInstance().getPlugin(PluginImpl.class).getBootConfigurations();
 
@@ -44,6 +39,11 @@ final class PathResolverImpl implements PathResolver2, Serializable {
                 buf.append(conf.getPxeLinuxConfigFragment()).append('\n');
             return Data.from(buf.toString());
         }
+
+        // static resources
+        URL res = Hudson.getInstance().getPluginManager().uberClassLoader.getResource("tftp/"+fileName);
+        if(res!=null)
+            return Data.from(res);
 
         throw new IOException("No such file: "+fileName);
     }
