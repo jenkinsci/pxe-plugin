@@ -72,6 +72,18 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
     }
 
     /**
+     * Looks up {@link BootConfiguration} by its {@linkplain BootConfiguration#getId() id}.
+     *
+     * Primarily used to bind them to URL.
+     */
+    public BootConfiguration getConfiguration(String id) {
+        for (BootConfiguration config : getBootConfigurations())
+            if(config.getId().equals(id))
+                return config;
+        return null;
+    }
+
+    /**
      * Access to this object requires the admin permission.
      */
     public Object getTarget() {
