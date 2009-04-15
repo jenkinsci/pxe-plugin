@@ -8,6 +8,14 @@ import org.jvnet.hudson.tftpd.Data;
 import java.io.IOException;
 
 /**
+ * Configuration of a bootable operating system.
+ *
+ * <p>
+ * Say "Ubuntu 2008.10 + such and such preseed config".
+ *
+ * <p>
+ * These objects are bound to URL as <tt>"/pxe/configuration/{@linkplain #getId() ID}/"</tt>
+ *
  * @author Kohsuke Kawaguchi
  */
 public abstract class BootConfiguration implements Describable<BootConfiguration> {
