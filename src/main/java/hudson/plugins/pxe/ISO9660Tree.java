@@ -1,4 +1,4 @@
-package hudson.plugins.pxe.ubuntu;
+package hudson.plugins.pxe;
 
 import org.kohsuke.loopy.FileEntry;
 import org.kohsuke.loopy.iso9660.ISO9660FileSystem;

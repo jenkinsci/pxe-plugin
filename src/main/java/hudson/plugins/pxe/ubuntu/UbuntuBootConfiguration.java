@@ -5,6 +5,7 @@ import hudson.Util;
 import hudson.model.Hudson;
 import hudson.plugins.pxe.BootConfiguration;
 import hudson.plugins.pxe.BootConfigurationDescriptor;
+import hudson.plugins.pxe.ISO9660Tree;
 import hudson.util.FormValidation;
 import static hudson.util.FormValidation.error;
 import static hudson.util.FormValidation.ok;
