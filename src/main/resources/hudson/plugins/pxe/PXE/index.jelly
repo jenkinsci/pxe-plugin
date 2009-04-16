@@ -30,7 +30,22 @@ THE SOFTWARE.
 
     ${it.daemonStatus.renderHtml()}
 
-    <!-- TODO: what to put here? -->
+    <j:choose>
+      <j:when test="${size(it.bootConfigurations)==0}">
+        <div>
+          <a href="configure">Add boot configurations</a> to get started.
+        </div>
+      </j:when>
+      <j:otherwise>
+        <ul>
+          <j:forEach var="config" items="${it.bootConfigurations}">
+            <li>
+              <a href="${config.url}/">${config.displayName}</a>
+            </li>
+          </j:forEach>
+        </ul>
+      </j:otherwise>
+    </j:choose>
   </l:main-panel>
 </l:layout>
 </j:jelly>

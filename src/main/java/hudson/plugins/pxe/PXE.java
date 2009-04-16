@@ -37,6 +37,10 @@ import java.net.InetAddress;
  */
 @Extension
 public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE> {
+    public PXE() {
+        assignIDs();
+    }
+
     public String getIconFileName() {
         return "orange-square.gif";
     }
@@ -126,6 +130,7 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
             plugin.setRootAccount(form.getString("rootUserName"),Secret.fromString(form.getString("rootPassword")));
             plugin.setTftpAddress(form.getString("tftpAddress"));
             getBootConfigurations().rebuildHetero(req,form,getDescriptors(),"configuration");
+            assignIDs();
         } catch (FormException e) {
             throw new ServletException(e);
         } finally {
@@ -135,6 +140,33 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         plugin.restartPXE();
 
         rsp.sendRedirect(".");
+    }
+
+    private void assignIDs() {
+        // recompute IDs
+        DescribableList<BootConfiguration, BootConfigurationDescriptor> all = getBootConfigurations();
+        OUTER:
+            for (BootConfiguration a : all) {
+            String seed = a.getIdSeed();
+            for( BootConfiguration b : all) {
+                if(b==a) continue;
+                if(b.getIdSeed().equals(seed)) {
+                    // conflict. resolve by adding index
+                    int index=1;
+                    for (BootConfiguration c : all) {
+                        if(c==a) {
+                            a.id=seed+"_"+index;
+                            continue OUTER;
+                        }
+                        if(c.getIdSeed().equals(seed))
+                            index++;
+                    }
+                    throw new AssertionError();
+                }
+            }
+            // no conflict
+            a.id=seed;
+        }
     }
 
     /**

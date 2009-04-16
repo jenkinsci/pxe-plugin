@@ -93,6 +93,10 @@ public class PluginImpl extends Plugin {
         return daemonService;
     }
 
+    public static PluginImpl get() {
+        return Hudson.getInstance().getPlugin(PluginImpl.class);
+    }
+
     private static final Logger LOGGER = Logger.getLogger(PluginImpl.class.getName());
 
 }

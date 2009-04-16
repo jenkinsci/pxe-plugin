@@ -1,9 +1,12 @@
 package hudson.plugins.pxe;
 
+import hudson.DescriptorExtensionList;
 import hudson.model.Describable;
 import hudson.model.Hudson;
-import hudson.DescriptorExtensionList;
+import hudson.model.AbstractModelObject;
 import org.jvnet.hudson.tftpd.Data;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
 
 import java.io.IOException;
 
@@ -18,13 +21,40 @@ import java.io.IOException;
  *
  * @author Kohsuke Kawaguchi
  */
-public abstract class BootConfiguration implements Describable<BootConfiguration> {
+public abstract class BootConfiguration extends AbstractModelObject implements Describable<BootConfiguration> {
     /**
+     * Computed by {@link PXE#doConfigSubmit(StaplerRequest, StaplerResponse)}.
+     */
+    /*package almost final*/ String id;
+
+    /**
+     * Returns a unique ID that distinguishes {@link BootConfiguration}s among other siblings.
+     *
      * For serving dynamic data from TFTP, it's often useful to have an unique ID per {@link BootConfiguration}.
      * This method provides that.
      */
     public String getId() {
-        return String.valueOf(hashCode());
+        return id;
+    }
+
+    /**
+     * Returns the string that becomes the seed of the {@link #getId()}. The ID
+     * is in turn used for HTTP URLs and TFTP file names, so this method should
+     * return something stable and not entirely illegible. But avoid unsafe characters like spaces, '/', etc.
+     * A good example would be "OpenSolaris2008.11" or "Ubuntu8.10".
+     *
+     * <p>
+     * Several {@link BootConfiguration}s can return the same ID seed, and {@link #getId()} handles
+     * those situations correctly. 
+     */
+    protected abstract String getIdSeed();
+
+    public final String getSearchUrl() {
+        return "configuration/"+getId();
+    }
+
+    public final String getUrl() {
+        return getSearchUrl();
     }
 
     public BootConfigurationDescriptor getDescriptor() {
