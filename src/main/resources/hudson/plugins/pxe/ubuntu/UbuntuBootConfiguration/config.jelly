@@ -25,4 +25,15 @@ THE SOFTWARE.
 	<f:entry title="${%Ubuntu DVD ISO file:}" field="iso">
     <f:textbox />
 	</f:entry>
+  <f:advanced>
+    <f:entry title="${%Default User Name:}" field="userName">
+      <f:textbox />
+    </f:entry>
+    <f:entry title="${%Default User Password:}" field="password">
+      <f:password />
+    </f:entry>
+    <f:entry title="${%Additional Packages:}" field="additionalPackages">
+      <f:textbox />
+    </f:entry>    
+  </f:advanced>
 </j:jelly>

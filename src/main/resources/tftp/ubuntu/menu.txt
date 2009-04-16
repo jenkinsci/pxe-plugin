@@ -7,9 +7,14 @@ MENU TITLE ${RELEASE}
 INCLUDE ubuntu/stdmenu.cfg
 
 label install
-	menu label Install
+	menu label Interactive Install
 	kernel ${ID}/linux
 	append vga=normal initrd=${ID}/initrd.gz -- quiet
+
+label autoinstall
+	menu label Automatic Install for Hudson
+	kernel ${ID}/linux
+	append vga=normal initrd=${ID}/initrd.gz auto url=${PRESEEDURL} -- quiet
 
 label mainmenu
     menu label ^Back to main menu

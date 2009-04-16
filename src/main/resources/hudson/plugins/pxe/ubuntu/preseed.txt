@@ -1,0 +1,131 @@
+#
+# Preseed file
+#
+# Debian (from which Ubuntu is derived) uses the technology called preseeding to
+# automate installations. This is basically just providing answers to questions
+# that the installer asks. Each installer question has an implicit ID and the type,
+# and this file consists of lines like "d-i <ID> <TYPE> <ANSWER>".
+#
+# On top of the standard preseeding format, this resource will be processed by
+# Hudson by evaluating JEXL expressions of the form ${expr}, where "it" refers
+# to the UbuntuBootConfiguration object. This mechanism pulls in user-specified
+# configuration into the preseeding.
+#
+# References:
+# Automating the installation using preseeding
+#   https://help.ubuntu.com/8.04/installation-guide/i386/appendix-preseed.html
+# Creating a preconfiguration file
+#   https://help.ubuntu.com/8.04/installation-guide/i386/preseed-creating.html
+
+### Localization
+# Locale sets language and country.
+d-i debian-installer/locale string en_US
+
+# Keyboard selection.
+#d-i console-tools/archs select at
+d-i console-keymaps-at/keymap select us
+
+### Network configuration
+# netcfg will choose an interface that has link if possible. This makes it
+# skip displaying a list if there is more than one interface.
+d-i netcfg/choose_interface select auto
+
+# Any hostname and domain names assigned from dhcp take precedence over
+# values set here. However, setting the values still prevents the questions
+# from being shown, even if values come from dhcp.
+d-i netcfg/get_hostname string unassigned-hostname
+d-i netcfg/get_domain string unassigned-domain
+
+### Mirror settings
+# If you select ftp, the mirror/country string does not need to be set.
+#d-i mirror/protocol string ftp
+d-i mirror/country string enter information manually
+d-i mirror/http/hostname string ${it.mirrorHostName}
+d-i mirror/http/directory string ${it.mirrorDirectory}
+d-i mirror/http/proxy string
+
+### Partitioning
+
+# Alternatively, you can specify a disk to partition. The device name
+# can be given in either devfs or traditional non-devfs format.
+# For example, to use the first disk:
+#d-i partman-auto/disk string /dev/discs/disc0/disc
+d-i partman-auto/disk string /dev/sda
+# In addition, you'll need to specify the method to use.
+# The presently available methods are: "regular", "lvm" and "crypto"
+d-i partman-auto/method string regular
+# If one of the disks that are going to be automatically partitioned
+# contains an old LVM configuration, the user will normally receive a
+# warning. This can be preseeded away...
+d-i partman-auto/purge_lvm_from_device boolean true
+# And the same goes for the confirmation to write the lvm partitions.
+d-i partman-lvm/confirm boolean true
+# This will create one partition for everything, plus a small swap space
+# d-i partman-auto/choose_recipe select All files in one partition (recommended for new users)
+# This is my attempt to create a bigger swap partition
+d-i partman-auto/expert_recipe string \
+  boot-root :: \
+    500 10000 1000000000 ext3 \
+      method{ format } format{ } \
+      use_filesystem{ } filesystem{ ext3 } \
+      mountpoint{ / } \
+    . \
+    5120 0 5120 linux-swap \
+      method{ swap } format{ } \
+    .
+
+# This makes partman automatically partition without confirmation.
+d-i partman/confirm_write_new_label boolean true
+d-i partman/choose_partition select Finish partitioning and write changes to disk
+d-i partman/confirm boolean true
+
+### Clock and time zone setup
+# Controls whether or not the hardware clock is set to UTC.
+d-i clock-setup/utc boolean true
+
+# You may set this to any valid setting for $TZ; see the contents of
+# /usr/share/zoneinfo/ for valid values.
+d-i time/zone string ${it.timeZone}
+
+### Apt setup
+# You can choose to install non-free and contrib software.
+d-i apt-setup/multiverse boolean true
+d-i apt-setup/universe boolean true
+
+### User account
+# To create a normal user account.
+d-i passwd/user-fullname string ${it.userName}
+d-i passwd/username string ${it.userName}
+# Normal user's password
+d-i passwd/user-password-crypted password ${it.password}
+# even if the password is weak, that's OK
+d-i user-setup/allow-password-weak true
+# This is fairly safe to set, it makes grub install automatically to the MBR
+# if no other operating system is detected on the machine.
+d-i grub-installer/only_debian boolean true
+# This one makes grub-installer install to the MBR if it also finds some other
+# OS, which is less safe as it might not be able to boot that other OS.
+d-i grub-installer/with_other_os boolean true
+# allow root logon with the same password
+d-i passwd/root-login boolean true
+d-i passwd/root-password-crypted password ${it.password}
+
+### Misc
+# no private encrypted directory.
+d-i user-setup/encrypted-private boolean false
+# starting Ubutn 9.04 they changed the name from encrypted-private to encrypted-home
+d-i user-setup/encrypted-home boolean false
+# testing the late command feature. Useful for post installation
+# TODO: consider using in-target script.
+d-i preseed/late-command string echo late-command > /target/late-command
+
+### Package selection
+tasksel tasksel/first multiselect standard, gnome-desktop
+# Individual additional packages to install
+d-i pkgsel/include string openssh-server ${it.additionalPackages}
+# Automatic security updates
+d-i pkgsel/update-policy select unattended-upgrades
+
+### Finishing up the first stage install
+# Avoid that last message about the install being complete.
+d-i finish-install/reboot_in_progress note
