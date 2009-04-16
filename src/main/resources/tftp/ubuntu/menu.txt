@@ -1,0 +1,16 @@
+menu hshift 13
+menu width 49
+menu margin 8
+
+MENU TITLE ${RELEASE}
+
+INCLUDE ubuntu/stdmenu.cfg
+
+label install
+	menu label Install
+	kernel ${ID}/linux
+	append vga=normal initrd=${ID}/initrd.gz -- quiet
+
+label mainmenu
+    menu label ^Back to main menu
+    kernel vesamenu.c32
