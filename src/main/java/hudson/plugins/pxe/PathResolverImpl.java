@@ -25,7 +25,7 @@ import java.net.URL;
 final class PathResolverImpl implements PathResolver2, Serializable {
     public Data open(final String fileName) throws IOException {
         // dynamic resources
-        DescribableList<BootConfiguration,BootConfigurationDescriptor> bootConfigurations = Hudson.getInstance().getPlugin(PluginImpl.class).getBootConfigurations();
+        DescribableList<BootConfiguration,BootConfigurationDescriptor> bootConfigurations = PXE.get().getBootConfigurations();
 
         for(BootConfiguration config : bootConfigurations) {
             Data d = config.tftp(fileName);

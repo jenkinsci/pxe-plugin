@@ -2,14 +2,21 @@ package hudson.plugins.pxe;
 
 import hudson.BulkChange;
 import hudson.Extension;
+import hudson.Util;
+import hudson.XmlFile;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import hudson.model.Descriptor.FormException;
 import hudson.model.Hudson;
 import hudson.model.ManagementLink;
-import hudson.model.Descriptor.FormException;
+import hudson.model.Saveable;
+import hudson.model.TaskListener;
+import hudson.os.SU;
+import hudson.remoting.VirtualChannel;
 import hudson.util.DescribableList;
-import hudson.util.Secret;
 import hudson.util.FormValidation;
+import hudson.util.Secret;
+import hudson.util.StreamTaskListener;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.StaplerProxy;
 import org.kohsuke.stapler.StaplerRequest;
@@ -17,28 +24,38 @@ import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.framework.io.LargeText;
 
 import javax.servlet.ServletException;
+import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.net.Inet4Address;
-import java.net.SocketException;
-import java.net.NetworkInterface;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * This object is bound to "/pxe" and handles all the UI work.
  *
- * <p>
- * The actual configuration is stored in {@link PluginImpl} to reuse the plugin persistence mechanism.
- *
  * @author Kohsuke Kawaguchi
  */
 @Extension
-public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE> {
-    public PXE() {
+public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE>, Saveable {
+    private String rootUserName;
+    private Secret rootPassword;
+    private final DescribableList<BootConfiguration, BootConfigurationDescriptor> bootConfigurations = new DescribableList<BootConfiguration, BootConfigurationDescriptor>(this);
+    private String tftpAddress;
+
+    // running state
+    private transient VirtualChannel channel;
+    private transient DaemonService daemonService;
+
+    public PXE() throws IOException, InterruptedException {
+        load();
         assignIDs();
+        restartPXE();
     }
 
     public String getIconFileName() {
@@ -54,19 +71,60 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
     }
 
     public String getRootUserName() {
-        return getPlugin().getRootUserName();
+        return rootUserName;
     }
 
     public Secret getRootPassword() {
-        return getPlugin().getRootPassword();
+        return rootPassword;
+    }
+
+    public DescribableList<BootConfiguration, BootConfigurationDescriptor> getBootConfigurations() {
+        return bootConfigurations;
+    }
+
+    public void setTftpAddress(String address) throws IOException {
+        this.tftpAddress = address;
+        save();
     }
 
     public String getTftpAddress() {
-        return getPlugin().getTftpAddress();
+        return tftpAddress;
+    }
+
+    public VirtualChannel getChannel() {
+        return channel;
     }
 
     public DaemonService getDaemonService() {
-        return getPlugin().getDaemonService();
+        return daemonService;
+    }
+
+    public File getLogFile() {
+        return new File(Hudson.getInstance().getRootDir(),"pxe.log");
+    }
+
+    public synchronized void restartPXE() throws IOException, InterruptedException {
+        if(tftpAddress==null) {
+            LOGGER.warning("Not starting TFTP/ProxyDHCP service due to incomplete configuration");
+            return;
+        }
+
+        if(channel!=null) {
+            LOGGER.info("Stopping TFTP/ProxyDHCP service");
+            channel.close();
+            channel.join(3000);
+        }
+        LOGGER.info("Starting TFTP/ProxyDHCP service");
+        TaskListener listener = new StreamTaskListener(getLogFile());
+        channel = SU.start(listener, rootUserName, rootPassword == null ? null : rootPassword.toString());
+        // export explicitly, or else it'll be unexported upon return
+        daemonService = channel.call(new PXEBootProcess(new PathResolverImpl().export(channel), tftpAddress));
+    }
+
+    public void setRootAccount(String userName, Secret password) throws IOException {
+        this.rootUserName = Util.fixEmptyAndTrim(userName);
+        this.rootPassword = password;
+        save();
     }
 
     /**
@@ -89,10 +147,6 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         return BootConfiguration.all();
     }
 
-    public DescribableList<BootConfiguration, BootConfigurationDescriptor> getBootConfigurations() {
-        return getPlugin().getBootConfigurations();
-    }
-
     /**
      * Looks up {@link BootConfiguration} by its {@linkplain BootConfiguration#getId() id}.
      *
@@ -113,23 +167,18 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         return this;
     }
 
-    /**
-     * Access to the singleton {@link PluginImpl} instance.
-     */
-    private PluginImpl getPlugin() {
-        return Hudson.getInstance().getPlugin(PluginImpl.class);
-    }
-
     public void doConfigSubmit(StaplerRequest req, StaplerResponse rsp) throws ServletException, IOException, InterruptedException {
         JSONObject form = req.getSubmittedForm();
 
-        // persist the plugin setting
-        PluginImpl plugin = getPlugin();
-        BulkChange bc = new BulkChange(plugin);
+        // persist the setting
+        BulkChange bc = new BulkChange(this);
         try {
-            plugin.setRootAccount(form.getString("rootUserName"),Secret.fromString(form.getString("rootPassword")));
-            plugin.setTftpAddress(form.getString("tftpAddress"));
-            getBootConfigurations().rebuildHetero(req,form,getDescriptors(),"configuration");
+            setRootAccount(form.getString("rootUserName"),Secret.fromString(form.getString("rootPassword")));
+            if(form.has("tftpAddress"))
+                setTftpAddress(form.getString("tftpAddress"));
+            else
+                setTftpAddress(getNICs().get(0).adrs.getHostAddress());
+            bootConfigurations.rebuildHetero(req,form,getDescriptors(),"configuration");
             assignIDs();
         } catch (FormException e) {
             throw new ServletException(e);
@@ -137,7 +186,7 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
             bc.commit();
         }
 
-        plugin.restartPXE();
+        restartPXE();
 
         rsp.sendRedirect(".");
     }
@@ -173,7 +222,7 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
      * Handles incremental log output.
      */
     public void doProgressiveLog( StaplerRequest req, StaplerResponse rsp) throws IOException {
-        new LargeText(getPlugin().getLogFile(),false).doProgressText(req,rsp);
+        new LargeText(getLogFile(),false).doProgressText(req,rsp);
     }
 
     public DescriptorImpl getDescriptor() {
@@ -235,4 +284,26 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
 
         return r;
     }
+
+    protected void load() throws IOException {
+        XmlFile xml = getConfigXml();
+        if(xml.exists())
+            xml.unmarshal(this);
+    }
+
+    public void save() throws IOException {
+        if(BulkChange.contains(this))   return;
+        getConfigXml().write(this);
+    }
+
+    protected XmlFile getConfigXml() {
+        return new XmlFile(Hudson.XSTREAM,
+                new File(Hudson.getInstance().getRootDir(),"pxe.xml"));
+    }
+
+    public static PXE get() {
+        return ManagementLink.all().get(PXE.class);
+    }
+
+    private static final Logger LOGGER = Logger.getLogger(PXE.class.getName());
 }
