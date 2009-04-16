@@ -170,6 +170,8 @@ public class UbuntuBootConfiguration extends BootConfiguration {
             // insufficient permission to perform validation?
             if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) return ok();
 
+            if(value.trim().length()==0)    return ok();    // nothing entered yet
+
             File f = new File(value);
             if(!f.exists())
                 return error("No such file file exists: "+value);
