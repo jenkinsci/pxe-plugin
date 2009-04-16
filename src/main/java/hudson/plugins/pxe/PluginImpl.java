@@ -20,9 +20,12 @@ import java.util.logging.Logger;
 public class PluginImpl extends Plugin {
     private String rootUserName;
     private Secret rootPassword;
-    private transient VirtualChannel channel;
     private final DescribableList<BootConfiguration, BootConfigurationDescriptor> bootConfigurations = new DescribableList<BootConfiguration, BootConfigurationDescriptor>(this);
     private String tftpAddress;
+
+    // running state
+    private transient VirtualChannel channel;
+    private transient DaemonService daemonService;
 
     /**
      * Initialization needs to happen after all the boot image plugins are loaded, so {@link #start()} won't do.
@@ -47,7 +50,8 @@ public class PluginImpl extends Plugin {
         LOGGER.info("Starting TFTP/ProxyDHCP service");
         TaskListener listener = new StreamTaskListener(getLogFile());
         channel = SU.start(listener, rootUserName, rootPassword == null ? null : rootPassword.toString());
-        channel.callAsync(new PXEBootProcess(new PathResolverImpl(), tftpAddress));
+        // export explicitly, or else it'll be unexported upon return
+        daemonService = channel.call(new PXEBootProcess(new PathResolverImpl().export(channel), tftpAddress));
     }
 
     public File getLogFile() {
@@ -83,6 +87,10 @@ public class PluginImpl extends Plugin {
 
     public VirtualChannel getChannel() {
         return channel;
+    }
+
+    public DaemonService getDaemonService() {
+        return daemonService;
     }
 
     private static final Logger LOGGER = Logger.getLogger(PluginImpl.class.getName());

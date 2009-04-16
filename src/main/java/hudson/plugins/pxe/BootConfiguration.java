@@ -43,6 +43,8 @@ public abstract class BootConfiguration implements Describable<BootConfiguration
      * The TFTP file namespace is a shared resources among all {@link BootConfiguration}s,
      * so plugins are expected to use some prefix to avoid collisions.
      *
+     * @param fileName
+     *      Full path that represents a resource requested by a TFTP client. Such as "foo/bar/zot".
      * @return
      *      null if no such file exists, as far as this plugin is concerned.
      *      The PXE plugin will continue to search other {@link BootConfiguration}s to

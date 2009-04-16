@@ -28,7 +28,9 @@ THE SOFTWARE.
   <l:main-panel>
     <h1>${%PXE Boot Management}</h1>
 
-    <div>Yes!</div>
+    ${it.daemonStatus.renderHtml()}
+
+    <!-- TODO: what to put here? -->
   </l:main-panel>
 </l:layout>
 </j:jelly>

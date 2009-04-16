@@ -1,24 +1,14 @@
 package hudson.plugins.pxe;
 
 import hudson.remoting.Callable;
-import hudson.util.IOException2;
+import hudson.remoting.Channel;
 import org.jvnet.hudson.proxy_dhcp.ProxyDhcpService;
-import org.jvnet.hudson.pxe.PXEBooter;
-import org.jvnet.hudson.tftpd.Data;
 import org.jvnet.hudson.tftpd.PathResolver;
 import org.jvnet.hudson.tftpd.TFTPServer;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.SequenceInputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -27,7 +17,7 @@ import java.util.logging.Logger;
  *
  * @author Kohsuke Kawaguchi
  */
-public class PXEBootProcess implements Callable<Void, IOException> {
+public class PXEBootProcess implements Callable<DaemonService, IOException> {
     private final PathResolver resolver;
     private final String tftpAddress;
 
@@ -36,23 +26,32 @@ public class PXEBootProcess implements Callable<Void, IOException> {
         this.tftpAddress = tftpAddress;
     }
 
-    public Void call() throws IOException {
+    public DaemonService call() throws IOException {
         // has to bind to the "any address" to receive packets, at least on Ubuntu
-        ProxyDhcpService dhcp = new ProxyDhcpService((Inet4Address)InetAddress.getByName(tftpAddress),"pxelinux.0");
-        start(dhcp);
+        LOGGER.info("Starting a DHCP proxy service");
+        final Thread dhcp = start(new ProxyDhcpService((Inet4Address)InetAddress.getByName(tftpAddress),"pxelinux.0"));
 
         // serve up resources
         LOGGER.info("Starting a TFTP service");
-        TFTPServer tftp = new TFTPServer(resolver);
-        start(tftp);
+        final Thread tftp = start(new TFTPServer(resolver));
 
-        return null;
+        LOGGER.info("All services ready");
+        return Channel.current().export(DaemonService.class,new DaemonService() {
+            public boolean isDHCPProxyAlive() {
+                return dhcp.isAlive();
+            }
+
+            public boolean isTFTPAlive() {
+                return tftp.isAlive();
+            }
+        });
     }
 
-    private void start(Runnable task) {
+    private Thread start(Runnable task) {
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
+        return t;
     }
 
     private static final Logger LOGGER = Logger.getLogger(PXEBootProcess.class.getName());

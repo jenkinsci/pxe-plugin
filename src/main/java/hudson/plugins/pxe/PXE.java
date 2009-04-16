@@ -9,6 +9,7 @@ import hudson.model.ManagementLink;
 import hudson.model.Descriptor.FormException;
 import hudson.util.DescribableList;
 import hudson.util.Secret;
+import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.StaplerProxy;
 import org.kohsuke.stapler.StaplerRequest;
@@ -58,6 +59,23 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
 
     public String getTftpAddress() {
         return getPlugin().getTftpAddress();
+    }
+
+    public DaemonService getDaemonService() {
+        return getPlugin().getDaemonService();
+    }
+
+    /**
+     * Obtains the status of the daemon.
+     */
+    public FormValidation getDaemonStatus() {
+        DaemonService ds = getDaemonService();
+        if(ds==null)    return FormValidation.warning("PXE service is not yet started. <a href='console'>Check console for the status</a>");
+        if(!ds.isDHCPProxyAlive())
+            return FormValidation.errorWithMarkup("DHCP proxy service is failing. <a href='console'>Check console for the status</a>");
+        if(!ds.isTFTPAlive())
+            return FormValidation.error("TFTP service is failing");
+        return FormValidation.ok();
     }
 
     /**

@@ -3,6 +3,7 @@ package hudson.plugins.pxe;
 import hudson.model.Hudson;
 import hudson.remoting.Channel;
 import hudson.remoting.RemoteInputStream;
+import hudson.remoting.VirtualChannel;
 import hudson.util.DescribableList;
 import org.apache.commons.io.IOUtils;
 import org.jvnet.hudson.tftpd.Data;
@@ -62,7 +63,11 @@ final class PathResolverImpl implements PathResolver2, Serializable {
      * When sent to the remote JVM, send a proxy.
      */
     private Object writeReplace() {
-        return new RemotePathResolverProxy(this);
+        return export(Channel.current());
+    }
+
+    public PathResolver export(VirtualChannel channel) {
+        return new RemotePathResolverProxy(channel.export(PathResolver2.class, this));
     }
 
     /**
@@ -73,7 +78,7 @@ final class PathResolverImpl implements PathResolver2, Serializable {
         private final PathResolver2 proxy;
 
         private RemotePathResolverProxy(PathResolver2 proxy) {
-            this.proxy = Channel.current().export(PathResolver2.class, proxy);
+            this.proxy = proxy;
         }
 
         public Data open(final String fileName) throws IOException {
