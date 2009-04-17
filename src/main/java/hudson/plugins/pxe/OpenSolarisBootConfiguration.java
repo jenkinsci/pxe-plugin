@@ -1,34 +1,69 @@
 package hudson.plugins.pxe;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.Hudson;
-import hudson.plugins.pxe.IsoBasedBootConfiguration;
-import hudson.plugins.pxe.PXE;
 import static hudson.util.FormValidation.error;
 import org.apache.commons.io.IOUtils;
+import org.jvnet.hudson.tftpd.Data;
 import org.kohsuke.loopy.FileEntry;
 import org.kohsuke.loopy.iso9660.ISO9660FileSystem;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.jvnet.hudson.tftpd.Data;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TimeZone;
 import java.util.logging.Level;
+import static java.util.logging.Level.WARNING;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.net.URL;
-import java.net.InetAddress;
 
 /**
  * OpenSolaris boot.
  *
+ * <h2>References</h2>
+ * <ul>
+ * <li><a href="http://wikis.sun.com/display/OSOLInstall/Automated+Installer+Core+Engine">
+ * Auto Installer Code Walkthrough</a>
+ *
+ * <li><a href="http://src.opensolaris.org/source/xref/caiman/slim_bp_installgrub/usr/src/cmd/auto-install/">
+ * Auto Installer source code</a>
+ *
  * @author Kohsuke Kawaguchi
  */
 public class OpenSolarisBootConfiguration extends IsoBasedBootConfiguration {
+    private transient AIWebServerThread aiServer;
+
     @DataBoundConstructor
-    public OpenSolarisBootConfiguration(File iso) {
+    public OpenSolarisBootConfiguration(File iso) throws IOException {
         super(iso);
+        startAIServer();
+    }
+
+    private void startAIServer() {
+        try {
+            aiServer = new AIWebServerThread();
+            aiServer.start();
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to restart the AI web server",e);
+        }
+    }
+
+    /**
+     * Is this object still being used?
+     */
+    private boolean isActive() {
+        return PXE.get().getConfiguration(getId())==this;
     }
 
     protected String getIdSeed() {
@@ -54,13 +89,18 @@ public class OpenSolarisBootConfiguration extends IsoBasedBootConfiguration {
         String host = new URL(baseUrl).getHost();
         baseUrl = baseUrl.replace(host,InetAddress.getByName(host).getHostAddress());
 
-        String httpIsoImage = String.format("%1$s/pxe/configuration/%2$s/image",
+        String httpIsoImage = String.format("%1$spxe/configuration/%2$s/image",
                 baseUrl,getId());
         return String.format("LABEL %1$s\n" +
                 "    MENU LABEL %2$s\n" +
                 "    KERNEL mboot.c32\n" +
-                "    APPEND -solaris %1$s/boot/platform/i86pc/kernel/unix -v -m verbose -B install_media=%3$s,install_boot=%3$s/boot,livemode=text --- %1$s/boot/x86.microroot\n",
-                getId(), getDisplayName(), httpIsoImage );
+                "    APPEND -solaris %1$s/boot/platform/i86pc/kernel/unix -v -m verbose -B install_media=%3$s,install_boot=%3$s/boot,livemode=text,install_service=dummy,install_svc_address=%4$s:%5$s --- %1$s/boot/boot_archive\n",
+                getId(), getDisplayName(), httpIsoImage, host, aiServer.server.getLocalPort());
+    }
+
+    public Object readResolve() {
+        startAIServer();
+        return this;
     }
 
     @Override
@@ -109,6 +149,77 @@ public class OpenSolarisBootConfiguration extends IsoBasedBootConfiguration {
         }
     }
 
+    /**
+     * Starts a micro web server that handles AI web requests. This has to be on a separate TCP port
+     * because the client only knows how to access the /manifests.xml
+     */
+    private class AIWebServerThread extends Thread {
+        private final ServerSocket server;
+        public AIWebServerThread() throws IOException {
+            super("OpenSolaris AI webserver for " + iso);
+            setDaemon(true);
+            server = new ServerSocket(0);
+            LOGGER.info("OpenSolaris AI server for "+iso+" started on port "+server.getLocalPort());
+        }
+
+        @Override
+        public void run() {
+            while(isActive()) {
+                Socket s;
+                try {
+                    s = server.accept();
+                } catch (IOException e) {
+                    LOGGER.log(WARNING, "Failed to accept",e);
+                    return; // exit
+                }
+                try {
+                    BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                    PrintStream out = new PrintStream(s.getOutputStream());
+                    String request = r.readLine();
+                    if(request.startsWith("GET /manifest.xml")) {
+                        out.println("HTTP/1.0 200 OK");
+                        out.println("Content-Type: text/xml");
+                        out.println("");
+                        out.println("<CriteriaList>");
+                        out.println("  <Version Number=\"0.5\"/>");
+                        out.println("</CriteriaList>");
+                    } else
+                    if(request.startsWith("POST /manifest.xml")) {
+                        out.println("HTTP/1.0 200 OK");
+                        out.println("Content-Type: text/xml");
+                        out.println("");
+
+                        String template = IOUtils.toString(getClass().getResourceAsStream("opensolaris-ai.xml"));
+                        Map<String,String> props = new HashMap<String, String>();
+                        props.put("userName","jack");
+                        props.put("rootPassword",Crypt.cryptMD5("abcdefgh","opensolaris"));
+                        props.put("timeZone", TimeZone.getDefault().getID());
+                        out.println(Util.replaceMacro(template,props));
+                    } else {
+                        out.println("HTTP/1.0 404 Not Found");
+                        out.println("Content-Type: text/html");
+                        out.println("");
+                        out.println("<html><body>This server only knows how to handle /manifest.xml</body></html>");
+                    }
+                    // close the write side
+                    out.flush();
+                    s.shutdownOutput();
+
+                    IOUtils.toString(r); // drain the input
+                    s.shutdownInput();
+                } catch(IOException e) {
+                    LOGGER.log(WARNING, "Failed to serve a request from AI web server",e);
+                } finally {
+                    try {
+                        s.close();
+                    } catch (IOException e) {
+                        LOGGER.log(WARNING, "Failed to close a socket in AI web server",e);
+                    }
+                }
+            }
+            LOGGER.fine(" AI web server thread exiting");
+        }
+    }
 
     private static final Pattern RELEASE = Pattern.compile("title (.+)\n");
 

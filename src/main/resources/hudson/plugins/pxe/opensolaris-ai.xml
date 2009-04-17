@@ -1,0 +1,45 @@
+<!--
+  See http://wikis.sun.com/display/OSOLInstall/AI+Schemas+and+Manifests
+-->
+<ai_criteria_manifest>
+  <!-- this portion defines the client installation -->
+  <ai_embedded_manifest>
+    <ai_manifest name="default">
+      <!--
+        TODO: still not very clear how the target device selection work.
+        The idea seems to be that if I don't specify anything the AI will do "the right thing",
+        except it seems to fail more often than work. There appears to be a lot of active development
+        in this space right now, so let's just wait until OpenSolaris improves before I spend too much
+        effort.
+      -->
+      <!--<ai_target_device>-->
+        <!--<target_device_name>c7d0p0</target_device_name>-->
+      <!--</ai_target_device>-->
+      <ai_pkg_repo_default_authority>
+        <main url="http://pkg.opensolaris.org" authname="opensolaris.org"/>
+        <mirror url=""/>
+      </ai_pkg_repo_default_authority>
+      <ai_packages>
+      </ai_packages>
+    </ai_manifest>
+  </ai_embedded_manifest>
+  <!-- this portion defines the system configuration -->
+  <sc_embedded_manifest name="AI">
+    <!-- <?xml version='1.0'?>
+        <!DOCTYPE service_bundle SYSTEM "/usr/share/lib/xml/dtd/service_bundle.dtd.1">
+        <service_bundle type="profile" name="name">
+            <service name="ai_properties" version="1" type="service">
+                <instance name="default" enabled="true">
+                    <property_group name="ai" type="application">
+                        <propval name="username" type="astring" value="${userName}"/>
+                        <propval name="userpass" type="astring" value="9Nd/cwBcNWFZg"/>
+                        <propval name="description" type="astring" value="default_user"/>
+                        <propval name="rootpass" type="astring" value="${rootPassword}"/>
+                        <propval name="timezone" type="astring" value="${timezone}"/>
+                    </property_group>
+                </instance>
+             </service>
+        </service_bundle>
+    -->
+  </sc_embedded_manifest>
+</ai_criteria_manifest>
