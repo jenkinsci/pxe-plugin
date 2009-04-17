@@ -4,6 +4,7 @@ import hudson.BulkChange;
 import hudson.Extension;
 import hudson.Util;
 import hudson.XmlFile;
+import hudson.tasks.Mailer;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
@@ -46,6 +47,9 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
     private String rootUserName;
     private Secret rootPassword;
     private final DescribableList<BootConfiguration, BootConfigurationDescriptor> bootConfigurations = new DescribableList<BootConfiguration, BootConfigurationDescriptor>(this);
+    /**
+     * Numberic IP address of the TFTP server, like "1.2.3.4"
+     */
     private String tftpAddress;
 
     // running state
@@ -104,6 +108,10 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
     }
 
     public synchronized void restartPXE() throws IOException, InterruptedException {
+        if(Hudson.getInstance().getRootUrl()==null) {
+            LOGGER.warning("Not starting TFTP/ProxyDHCP because Hudson Root URL is not configured");
+            return;
+        }
         if(tftpAddress==null) {
             LOGGER.warning("Not starting TFTP/ProxyDHCP service due to incomplete configuration");
             return;
@@ -131,8 +139,11 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
      * Obtains the status of the daemon.
      */
     public FormValidation getDaemonStatus() {
+        if(Mailer.descriptor().getUrl()==null)
+            return FormValidation.warningWithMarkup("<a href='../configure'>Hudson Root URL is not configured</a>.");
         DaemonService ds = getDaemonService();
-        if(ds==null)    return FormValidation.warning("PXE service is not yet started. <a href='console'>Check console for the status</a>");
+        if(ds==null)
+            return FormValidation.warningWithMarkup("PXE service is not yet started. <a href='console'>Check console for the status</a>");
         if(!ds.isDHCPProxyAlive())
             return FormValidation.errorWithMarkup("DHCP proxy service is failing. <a href='console'>Check console for the status</a>");
         if(!ds.isTFTPAlive())

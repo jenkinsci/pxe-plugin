@@ -28,8 +28,11 @@ final class PathResolverImpl implements PathResolver2, Serializable {
         DescribableList<BootConfiguration,BootConfigurationDescriptor> bootConfigurations = PXE.get().getBootConfigurations();
 
         for(BootConfiguration config : bootConfigurations) {
-            Data d = config.tftp(fileName);
-            if(d!=null)     return d;
+            String id = config.getId()+'/';
+            if(fileName.startsWith(id)) {
+                Data d = config.tftp(fileName.substring(id.length()));
+                if(d!=null)     return d;
+            }
         }
 
         if(fileName.equals("pxelinux.cfg/default")) {

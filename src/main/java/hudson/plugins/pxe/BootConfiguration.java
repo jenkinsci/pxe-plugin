@@ -70,11 +70,13 @@ public abstract class BootConfiguration extends AbstractModelObject implements D
      * under /tftp.
      *
      * <p>
-     * The TFTP file namespace is a shared resources among all {@link BootConfiguration}s,
-     * so plugins are expected to use some prefix to avoid collisions.
+     * The TFTP file namespace is divided for each {@link BootConfiguration}s as
+     * <tt>/{@linkplain #getId() ID}/...</tt> to avoid collisions between different configurations.
      *
      * @param fileName
-     *      Full path that represents a resource requested by a TFTP client. Such as "foo/bar/zot".
+     *      Relative path within the space designated for this boot configuration. For example,
+     *      if the client requests "foo/bar/zot" and the ID of this configuration is "foo", this
+     *      parameter will be "bar/zot".
      * @return
      *      null if no such file exists, as far as this plugin is concerned.
      *      The PXE plugin will continue to search other {@link BootConfiguration}s to

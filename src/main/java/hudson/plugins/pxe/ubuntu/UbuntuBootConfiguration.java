@@ -7,6 +7,7 @@ import hudson.plugins.pxe.BootConfiguration;
 import hudson.plugins.pxe.BootConfigurationDescriptor;
 import hudson.plugins.pxe.Crypt;
 import hudson.plugins.pxe.ISO9660Tree;
+import hudson.plugins.pxe.IsoBasedBootConfiguration;
 import hudson.util.FormValidation;
 import static hudson.util.FormValidation.error;
 import static hudson.util.FormValidation.ok;
@@ -40,14 +41,7 @@ import java.util.regex.Pattern;
  *
  * @author Kohsuke Kawaguchi
  */
-public class UbuntuBootConfiguration extends BootConfiguration {
-    /**
-     * Location of the CD/DVD image file.
-     */
-    public final File iso;
-
-    private volatile String release;
-
+public class UbuntuBootConfiguration extends IsoBasedBootConfiguration {
     // preseed configurations that are user configurable
     public final String additionalPackages;
     public final String userName;
@@ -55,7 +49,7 @@ public class UbuntuBootConfiguration extends BootConfiguration {
 
     @DataBoundConstructor
     public UbuntuBootConfiguration(File iso, String userName, String password, String additionalPackages) {
-        this.iso = iso;
+        super(iso);
 
         if(Util.fixEmptyAndTrim(userName)==null)    userName="hudson";
         this.userName = userName;
@@ -76,19 +70,6 @@ public class UbuntuBootConfiguration extends BootConfiguration {
                 getId(), getRelease());
     }
 
-    /**
-     * This returns string like "Ubuntu-Server 8.10 "Intrepid Ibex" - Release i386 (20081028.1)"
-     */
-    public String getRelease() {
-        if(release==null)
-            try {
-                release = getReleaseInfo(iso);
-            } catch (IOException e) {
-                release = "Broken Ubuntu image at "+iso;
-            }
-        return release;
-    }
-
     protected String getIdSeed() {
         // try to extract a short name from the release information
         Pattern p = Pattern.compile("Ubuntu[^ ]* ([0-9.]+).+?(i386|amd64)?");
@@ -104,18 +85,13 @@ public class UbuntuBootConfiguration extends BootConfiguration {
      * Serves menu.txt by replacing variables.
      */
     public Data tftp(String fileName) throws IOException {
-        String prefix = getId() + "/";
-        if(!fileName.startsWith(prefix))   return null;    // not ours
-
-        fileName=fileName.substring(prefix.length());
-
         if(fileName.equals("menu.txt")) {
             // menu
             String template = IOUtils.toString(getClass().getClassLoader().getResourceAsStream("tftp/ubuntu/menu.txt"));
             Map<String,String> props = new HashMap<String, String>();
             props.put("RELEASE",getRelease());
             props.put("ID",getId());
-            props.put("PRESEEDURL",Hudson.getInstance().getRootUrl()+"pxe/"+getUrl()+"/image");
+            props.put("PRESEEDURL",Hudson.getInstance().getRootUrl()+"pxe/"+getUrl()+"/preseed");
 
             return Data.from(Util.replaceMacro(template,props));
         }
@@ -129,57 +105,10 @@ public class UbuntuBootConfiguration extends BootConfiguration {
             if(arch==null)  arch=children.get("amd64");
             if(arch==null)      throw new IOException("/install/netboot/ubuntu-installer/(amd64|i386) not found on "+iso);
 
-            final FileEntry data = arch.grab(fileName);
-            return new Data() {
-                public InputStream read() throws IOException {
-                    return data.read();
-                }
-
-                @Override
-                public int size() throws IOException {
-                    return data.getSize();
-                }
-            };
+            return new FileEntryData(arch.grab(fileName));
         }
 
         return null;
-    }
-
-    private static String getReleaseInfo(File iso) throws IOException {
-        ISO9660FileSystem fs=null;
-        try {
-            try {
-                fs = new ISO9660FileSystem(iso,false);
-            } catch (IOException e) {
-                LOGGER.log(Level.INFO,iso+" isn't an ISO file?",e);
-                throw error(iso+" doesn't look like an ISO file");
-            }
-
-            FileEntry info = fs.get("/.disk/info");
-            if(info==null)
-                throw error(iso+" doesn't look like an Ubuntu CD/DVD image");
-
-            FileEntry installer = fs.get("/install/netboot/ubuntu-installer");
-            if(installer==null)
-                throw error(iso+" doesn't have the network boot installer in it. Perhaps it's a desktop CD?");
-
-            return IOUtils.toString(info.read());
-        } finally {
-            if(fs!=null)
-                fs.close();
-        }
-    }
-
-    public ISO9660Tree doImage() {
-        return new ISO9660Tree(iso);
-    }
-
-    public void doIndex(StaplerRequest req, StaplerResponse rsp) throws IOException {
-        rsp.sendRedirect("./image/");
-    }
-
-    public String getDisplayName() {
-        return getRelease();
     }
 
 //
@@ -225,25 +154,36 @@ public class UbuntuBootConfiguration extends BootConfiguration {
     }
 
     @Extension
-    public static class DescriptorImpl extends BootConfigurationDescriptor {
+    public static class DescriptorImpl extends IsoBasedBootConfigurationDescriptor {
         public String getDisplayName() {
             return "Ubuntu";
         }
 
-        public FormValidation doCheckIso(@QueryParameter String value) throws IOException {
-            // insufficient permission to perform validation?
-            if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) return ok();
-
-            if(value.trim().length()==0)    return ok();    // nothing entered yet
-
-            File f = new File(value);
-            if(!f.exists())
-                return error("No such file file exists: "+value);
-
+        /**
+         * This returns string like "Ubuntu-Server 8.10 "Intrepid Ibex" - Release i386 (20081028.1)"
+         */
+        protected String getReleaseInfo(File iso) throws IOException {
+            ISO9660FileSystem fs=null;
             try {
-                return ok(getReleaseInfo(f));
-            } catch (FormValidation e) {
-                return e;
+                try {
+                    fs = new ISO9660FileSystem(iso,false);
+                } catch (IOException e) {
+                    LOGGER.log(Level.INFO,iso+" isn't an ISO file?",e);
+                    throw error(iso+" doesn't look like an ISO file");
+                }
+
+                FileEntry info = fs.get("/.disk/info");
+                if(info==null)
+                    throw error(iso+" doesn't look like an Ubuntu CD/DVD image");
+
+                FileEntry installer = fs.get("/install/netboot/ubuntu-installer");
+                if(installer==null)
+                    throw error(iso+" doesn't have the network boot installer in it. Perhaps it's a desktop CD?");
+
+                return IOUtils.toString(info.read());
+            } finally {
+                if(fs!=null)
+                    fs.close();
             }
         }
     }
