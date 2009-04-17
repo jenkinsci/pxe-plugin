@@ -18,7 +18,7 @@
 
 ### Localization
 # Locale sets language and country.
-d-i debian-installer/locale string en_US
+d-i debian-installer/locale string ${locale}
 
 # Keyboard selection.
 #d-i console-tools/archs select at

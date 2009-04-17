@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -88,6 +89,7 @@ public class UbuntuBootConfiguration extends IsoBasedBootConfiguration {
             props.put("RELEASE",getRelease());
             props.put("ID",getId());
             props.put("PRESEEDURL",Hudson.getInstance().getRootUrl()+"pxe/"+getUrl()+"/preseed");
+            props.put("LOCALE",Locale.getDefault().toString());
 
             return Data.from(Util.replaceMacro(template,props));
         }
@@ -125,22 +127,21 @@ public class UbuntuBootConfiguration extends IsoBasedBootConfiguration {
         return url.getPath()+"pxe/"+getUrl()+"/image";
     }
 
-    public String getTimeZone() {
-        return TimeZone.getDefault().getID();
-    }
-
     /**
      * Serves the preseed file
      */
     public void doPreseed(StaplerResponse rsp) throws IOException {
         final HashMapContext context = new HashMapContext();
         context.put("it",this);
+        context.put("timeZone",TimeZone.getDefault().getID());
+        context.put("locale", Locale.getDefault().toString());
 
         rsp.setContentType("text/plain");
         rsp.getWriter().println(
             Util.replaceMacro(IOUtils.toString(getClass().getResourceAsStream("ubuntu-preseed.txt")),new VariableResolver<String>() {
                 public String resolve(String name) {
                     try {
+                        if(context.containsKey(name))   return context.get(name).toString();
                         return String.valueOf(ExpressionFactory.createExpression("it."+name).evaluate(context));
                     } catch (Exception e) {
                         throw new Error(e); // tunneling. this must indicate a programming error

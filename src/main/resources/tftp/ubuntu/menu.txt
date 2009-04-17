@@ -14,7 +14,7 @@ label install
 label autoinstall
 	menu label Automatic Install for Hudson
 	kernel ${ID}/linux
-	append vga=normal initrd=${ID}/initrd.gz auto url=${PRESEEDURL} -- quiet
+	append vga=normal initrd=${ID}/initrd.gz auto url=${PRESEEDURL} locale=${LOCALE} debian-installer/keymap=us -- quiet
 
 label mainmenu
     menu label ^Back to main menu
