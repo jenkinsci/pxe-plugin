@@ -1,12 +1,9 @@
-package hudson.plugins.pxe.ubuntu;
+package hudson.plugins.pxe;
 
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Hudson;
-import hudson.plugins.pxe.BootConfiguration;
-import hudson.plugins.pxe.BootConfigurationDescriptor;
 import hudson.plugins.pxe.Crypt;
-import hudson.plugins.pxe.ISO9660Tree;
 import hudson.plugins.pxe.IsoBasedBootConfiguration;
 import hudson.util.FormValidation;
 import static hudson.util.FormValidation.error;
@@ -25,7 +22,6 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -142,7 +138,7 @@ public class UbuntuBootConfiguration extends IsoBasedBootConfiguration {
 
         rsp.setContentType("text/plain");
         rsp.getWriter().println(
-            Util.replaceMacro(IOUtils.toString(getClass().getResourceAsStream("preseed.txt")),new VariableResolver<String>() {
+            Util.replaceMacro(IOUtils.toString(getClass().getResourceAsStream("ubuntu-preseed.txt")),new VariableResolver<String>() {
                 public String resolve(String name) {
                     try {
                         return String.valueOf(ExpressionFactory.createExpression("it."+name).evaluate(context));
