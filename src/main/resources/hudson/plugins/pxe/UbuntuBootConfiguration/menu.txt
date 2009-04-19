@@ -2,19 +2,19 @@ menu hshift 13
 menu width 49
 menu margin 8
 
-MENU TITLE ${RELEASE}
+MENU TITLE ${release}
 
 INCLUDE ubuntu/stdmenu.cfg
 
 label install
 	menu label Interactive Install
-	kernel ${ID}/linux
-	append vga=normal initrd=${ID}/initrd.gz -- quiet
+	kernel ${id}/linux
+	append vga=normal initrd=${id}/initrd.gz -- quiet
 
 label autoinstall
 	menu label Automatic Install for Hudson
-	kernel ${ID}/linux
-	append vga=normal initrd=${ID}/initrd.gz auto url=${PRESEEDURL} locale=${LOCALE} debian-installer/keymap=us -- quiet
+	kernel ${id}/linux
+	append vga=normal initrd=${id}/initrd.gz auto url=${absoluteUrl}/preseed locale=${locale} debian-installer/keymap=us -- quiet
 
 label mainmenu
     menu label ^Back to main menu

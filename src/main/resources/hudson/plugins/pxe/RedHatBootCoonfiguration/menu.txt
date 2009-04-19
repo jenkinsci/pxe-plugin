@@ -1,0 +1,24 @@
+menu background redhat/splash.jpg
+menu title ${RELEASE}
+menu color border 0 #ffffffff #00000000
+menu color sel 7 #ffffffff #ff000000
+menu color title 0 #ffffffff #00000000
+menu color tabmsg 0 #ffffffff #00000000
+menu color unsel 0 #ffffffff #00000000
+menu color hotsel 0 #ff000000 #ffffffff
+menu color hotkey 7 #ffffffff #ff000000
+menu color scrollbar 0 #ffffffff #00000000
+
+label install
+  menu label ^Interactive Install
+  kernel ${ID}/vmlinuz
+  append initrd=${ID}/initrd.img
+
+label autoinstall
+  menu label ^Automatic Install for Hudson
+  kernel ${ID}/vmlinuz
+  append initrd=${ID}/initrd.img ks=${KICKSTARTURL}
+
+label mainmenu
+    menu label ^Back to main menu
+    kernel vesamenu.c32

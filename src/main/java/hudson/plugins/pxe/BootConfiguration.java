@@ -57,6 +57,16 @@ public abstract class BootConfiguration extends AbstractModelObject implements D
         return getSearchUrl();
     }
 
+    /**
+     * Gets the absolute URL to this {@link BootConfiguration}.
+     *
+     * @return
+     *      String like "http://foobar/path/to/hudson/pxe/configuration/me" without trailing '/'.
+     */
+    public final String getAbsoluteUrl() {
+        return Hudson.getInstance().getRootUrl()+"pxe/"+getUrl();
+    }
+
     public BootConfigurationDescriptor getDescriptor() {
         return (BootConfigurationDescriptor) Hudson.getInstance().getDescriptor(getClass());
     }
