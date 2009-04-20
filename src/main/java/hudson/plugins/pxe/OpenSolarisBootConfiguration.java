@@ -179,7 +179,7 @@ public class OpenSolarisBootConfiguration extends IsoBasedBootConfiguration {
         private ServerSocket openSocket() throws IOException {
             // the port could be anything, but it's often easier if the port doesn't change too much,
             // so try to stick to the one that we can programmatically infer
-            int preferred = Math.abs(OpenSolarisBootConfiguration.this.getId().hashCode()) % 40000 + 10000;
+            int preferred = Math.abs(OpenSolarisBootConfiguration.this.getIdSeed().hashCode()) % 40000 + 10000;
             try {
                 return new ServerSocket(preferred);
             } catch (BindException e) {
