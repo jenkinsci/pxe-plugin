@@ -25,9 +25,19 @@ import java.util.Arrays;
  * @author Kohsuke Kawaguchi
  */
 public class RedHatBootCoonfiguration extends LinuxBootConfiguration {
+    public final String additionalPackages;
+    public final String password;
+
     @DataBoundConstructor
-    public RedHatBootCoonfiguration(File iso) {
+    public RedHatBootCoonfiguration(File iso, String password, String additionalPackages) {
         super(iso);
+
+        if(Util.fixEmptyAndTrim(password)==null)    password="hudson";
+        if(!password.startsWith("$1$"))
+            password = Crypt.cryptMD5("abcdefgh",password);
+        this.password = password;
+
+        this.additionalPackages = additionalPackages;
     }
 
     protected String getIdSeed() {
@@ -55,6 +65,10 @@ public class RedHatBootCoonfiguration extends LinuxBootConfiguration {
      */
     public void doKickstart(StaplerResponse rsp) throws IOException {
         serveMacroExpandedResource(rsp,"kickstart.txt");
+    }
+
+    public String getPakcageList() {
+        return Util.join(Arrays.asList(additionalPackages.split(" +")),"\n");
     }
 
     @Extension

@@ -1,46 +1,24 @@
-#version=DEVEL
+# install a fresh system instead of upgrade
 install
 url --url=${absoluteUrl}/image
 lang ${locale}
 keyboard us
-network --device eth0 --bootproto dhcp
-rootpw  --iscrypted $6$fFZsYct4RJn0mIXK$6Sc61tUufRNGvU4fTjSFKHsYSCXwN3wWW3F5VNsJizGKUC2glfWQTWiW1llcaUh.L6r0mqBCYtXtMGvyI2Mjk0
+network --bootproto dhcp
+rootpw  --iscrypted ${password}
 firewall --service=ssh
-authconfig --enableshadow --passalgo=sha512
+authconfig --enableshadow
 selinux --enforcing
 timezone --utc ${timeZone}
-bootloader --location=mbr --driveorder=sda --append="rhgb quiet"
+bootloader --location=mbr
+reboot
 
 %packages
 @admin-tools
 @base
 @core
-@dial-up
 @editors
-@fonts
 @gnome-desktop
 @graphical-internet
 @hardware-support
-@input-methods
 @java
-@printing
-@sound-and-video
-@text-internet
-@base-x
-gpgme
-gpm
-pax
-gnupg2
-m17n-db-tamil
-m17n-db-gujarati
-m17n-db-kannada
-m17n-db-hindi
-gok
-m17n-db-oriya
-m17n-db-bengali
-m17n-contrib-sinhala
-m17n-db-assamese
-m17n-db-punjabi
-m17n-db-telugu
-m17n-db-malayalam
-gdm
+${packageList}
