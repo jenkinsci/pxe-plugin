@@ -1,6 +1,7 @@
 package hudson.plugins.pxe;
 
 import hudson.Extension;
+import hudson.Util;
 import static hudson.util.FormValidation.error;
 import org.jvnet.hudson.tftpd.Data;
 import org.kohsuke.loopy.FileEntry;
@@ -14,6 +15,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.Arrays;
 
 /**
  * RedHat/Fedora boot configuration.
@@ -27,8 +31,7 @@ public class RedHatBootCoonfiguration extends LinuxBootConfiguration {
     }
 
     protected String getIdSeed() {
-        // TODO: get distro name and release
-        return "redhat";
+        return getRelease().replaceAll("[ ()]","");
     }
 
     protected FileEntry getTftpIsoMountDir(ISO9660FileSystem fs) throws IOException {
@@ -75,26 +78,46 @@ public class RedHatBootCoonfiguration extends LinuxBootConfiguration {
                     throw error(iso+" doesn't look like an ISO file");
                 }
 
-                FileEntry info = fs.get("/media.repo");
+                FileEntry info = fs.get("/.treeinfo");
                 if(info==null)
                     throw error(iso+" doesn't look like a RedHat/Fedora CD/DVD image");
 
-                /* On Fedora 10 DVD, this file looks like:
-                        [InstallMedia]
-                        name=Fedora 10
-                        mediaid=1227142402.812888
-                        metadata_expire=-1
-                        gpgcheck=0
-                        cost=500
+                /* On Fedora 10 DVD, this file contains:
+                    [general]
+                    family = Fedora
+                    timestamp = 1227142151.33
+                    variant = Fedora
+                    totaldiscs = 1
+                    version = 10
+                    discnum = 1
+                    packagedir =
+                    arch = i386
+
+                   On CentOS, this entry was:
+                    [general]
+                    family = CentOS
+                    timestamp = 1237646605.22
+                    totaldiscs = 1
+                    version = 5.3
+                    discnum = 1
+                    packagedir = CentOS
+                    arch = i386
                  */
+                Map<String,String> section = new TreeMap<String,String>();
                 BufferedReader r = new BufferedReader(new InputStreamReader(info.read()));
                 try {
                     String line;
                     while((line=r.readLine())!=null) {
-                        if(line.startsWith("name="))
-                            return line.substring(5);
+                        if(line.contains(" = ")) {
+                            String[] tokens = line.split("=");
+                            section.put(tokens[0].trim(),tokens[1].trim());
+                        }
                     }
-                    throw error(iso+" doesn't contain the name entry in media.repo");
+                    if(!section.containsKey("family") || !section.containsKey("version") || !section.containsKey("arch"))
+                        throw error(iso+" doesn't contain the name entry in media.repo");
+                    // should be something like "CentOS 5.3 (i386)"
+                    return Util.join(Arrays.asList(
+                            section.get("family"),section.get("version"),"("+section.get("arch")+")")," ");
                 } finally {
                     r.close();
                 }

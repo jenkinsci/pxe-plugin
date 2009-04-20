@@ -1,5 +1,5 @@
 menu background redhat/splash.jpg
-menu title ${RELEASE}
+menu title ${release}
 menu color border 0 #ffffffff #00000000
 menu color sel 7 #ffffffff #ff000000
 menu color title 0 #ffffffff #00000000
@@ -11,13 +11,13 @@ menu color scrollbar 0 #ffffffff #00000000
 
 label install
   menu label ^Interactive Install
-  kernel ${ID}/vmlinuz
-  append initrd=${ID}/initrd.img
+  kernel ${id}/vmlinuz
+  append initrd=${id}/initrd.img text
 
 label autoinstall
   menu label ^Automatic Install for Hudson
-  kernel ${ID}/vmlinuz
-  append initrd=${ID}/initrd.img ks=${KICKSTARTURL}
+  kernel ${id}/vmlinuz
+  append initrd=${id}/initrd.img text ks=${absoluteUrl}/kickstart
 
 label mainmenu
     menu label ^Back to main menu
