@@ -69,7 +69,7 @@ public abstract class LinuxBootConfiguration extends IsoBasedBootConfiguration {
      */
     protected VariableResolver<String> createResolver() {
         final HashMapContext context = new HashMapContext();
-        context.put("it", null);
+        context.put("it", this);
         // these are commonly used values
         context.put("timeZone", TimeZone.getDefault().getID());
         context.put("locale", Locale.getDefault().toString());
