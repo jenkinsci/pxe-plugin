@@ -116,7 +116,7 @@ d-i user-setup/encrypted-private boolean false
 d-i user-setup/encrypted-home boolean false
 # testing the late command feature. Useful for post installation
 # TODO: consider using in-target script.
-d-i preseed/late-command string echo late-command > /target/late-command
+d-i preseed/late_command string echo late_command > /target/late_command
 
 ### Package selection
 tasksel tasksel/first multiselect standard, gnome-desktop
