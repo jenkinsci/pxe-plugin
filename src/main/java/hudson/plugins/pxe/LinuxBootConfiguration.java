@@ -33,13 +33,6 @@ public abstract class LinuxBootConfiguration extends IsoBasedBootConfiguration {
     }
 
     /**
-     * Convenience method to load a resource from the same place as Jelly views.
-     */
-    protected InputStream getResourceAsStream(String suffix) {
-        return getClass().getClassLoader().getResourceAsStream(getClass().getName().replace('.','/')+'/'+suffix);
-    }
-
-    /**
      * Serves menu.txt by replacing variables.
      */
     public Data tftp(String fileName) throws IOException {

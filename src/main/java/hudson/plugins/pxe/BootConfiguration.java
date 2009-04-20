@@ -9,6 +9,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Configuration of a bootable operating system.
@@ -69,6 +70,13 @@ public abstract class BootConfiguration extends AbstractModelObject implements D
 
     public BootConfigurationDescriptor getDescriptor() {
         return (BootConfigurationDescriptor) Hudson.getInstance().getDescriptor(getClass());
+    }
+
+    /**
+     * Convenience method to load a resource from the same place as Jelly views are loaded.
+     */
+    protected InputStream getResourceAsStream(String fileName) {
+        return getClass().getClassLoader().getResourceAsStream(getClass().getName().replace('.','/')+'/'+fileName);
     }
 
     /**

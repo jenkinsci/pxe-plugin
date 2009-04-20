@@ -224,7 +224,7 @@ public class OpenSolarisBootConfiguration extends IsoBasedBootConfiguration {
                                 out.println("Content-Type: text/xml");
                                 out.println("");
 
-                                String template = IOUtils.toString(getClass().getResourceAsStream("opensolaris-ai.xml"));
+                                String template = IOUtils.toString(getResourceAsStream("ai.xml"));
                                 Map<String,String> props = new HashMap<String, String>();
                                 props.put("userName","jack");
                                 props.put("rootPassword",Crypt.cryptMD5("abcdefgh","opensolaris"));
