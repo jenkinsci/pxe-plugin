@@ -189,6 +189,8 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
                 setTftpAddress(form.getString("tftpAddress"));
             else
                 setTftpAddress(getNICs().get(0).adrs.getHostAddress());
+            for (BootConfiguration c : bootConfigurations)
+                c.shutdown();
             bootConfigurations.rebuildHetero(req,form,getDescriptors(),"configuration");
             assignIDs();
         } catch (FormException e) {

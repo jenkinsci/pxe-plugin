@@ -19,6 +19,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
+import java.net.BindException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
@@ -72,6 +73,12 @@ public class OpenSolarisBootConfiguration extends IsoBasedBootConfiguration {
         Matcher m = p.matcher(getRelease());
         if(m.find())    return m.group(0);
         return "opensolaris";
+    }
+
+    @Override
+    protected void shutdown() throws IOException {
+        if(aiServer!=null) // we might have failed to initialize ai server.
+            aiServer.close();
     }
 
     /**
@@ -155,67 +162,97 @@ public class OpenSolarisBootConfiguration extends IsoBasedBootConfiguration {
      */
     private class AIWebServerThread extends Thread {
         private final ServerSocket server;
+        private boolean closed;
         public AIWebServerThread() throws IOException {
             super("OpenSolaris AI webserver for " + iso);
             setDaemon(true);
-            server = new ServerSocket(0);
+            server = openSocket();
             LOGGER.info("OpenSolaris AI server for "+iso+" started on port "+server.getLocalPort());
+        }
+
+        public void close() throws IOException {
+            LOGGER.info("Shutting down "+getName());
+            closed=true;
+            server.close();
+        }
+
+        private ServerSocket openSocket() throws IOException {
+            // the port could be anything, but it's often easier if the port doesn't change too much,
+            // so try to stick to the one that we can programmatically infer
+            int preferred = Math.abs(OpenSolarisBootConfiguration.this.getId().hashCode()) % 40000 + 10000;
+            try {
+                return new ServerSocket(preferred);
+            } catch (BindException e) {
+                // OK, that one wasn't available. pick available one
+                return new ServerSocket(0);
+            }
         }
 
         @Override
         public void run() {
             while(isActive()) {
-                Socket s;
+                final Socket s;
                 try {
                     s = server.accept();
                 } catch (IOException e) {
-                    LOGGER.log(WARNING, "Failed to accept",e);
+                    if(!closed)
+                        LOGGER.log(WARNING, "Failed to accept",e);
                     return; // exit
                 }
-                try {
-                    BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                    PrintStream out = new PrintStream(s.getOutputStream());
-                    String request = r.readLine();
-                    if(request.startsWith("GET /manifest.xml")) {
-                        out.println("HTTP/1.0 200 OK");
-                        out.println("Content-Type: text/xml");
-                        out.println("");
-                        out.println("<CriteriaList>");
-                        out.println("  <Version Number=\"0.5\"/>");
-                        out.println("</CriteriaList>");
-                    } else
-                    if(request.startsWith("POST /manifest.xml")) {
-                        out.println("HTTP/1.0 200 OK");
-                        out.println("Content-Type: text/xml");
-                        out.println("");
 
-                        String template = IOUtils.toString(getClass().getResourceAsStream("opensolaris-ai.xml"));
-                        Map<String,String> props = new HashMap<String, String>();
-                        props.put("userName","jack");
-                        props.put("rootPassword",Crypt.cryptMD5("abcdefgh","opensolaris"));
-                        props.put("timeZone", TimeZone.getDefault().getID());
-                        out.println(Util.replaceMacro(template,props));
-                    } else {
-                        out.println("HTTP/1.0 404 Not Found");
-                        out.println("Content-Type: text/html");
-                        out.println("");
-                        out.println("<html><body>This server only knows how to handle /manifest.xml</body></html>");
-                    }
-                    // close the write side
-                    out.flush();
-                    s.shutdownOutput();
+                // handle the request in a separate thread 
+                new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            // the goal here is to avoid infinite blocking, so set a long time out.
+                            s.setSoTimeout(10*60*1000);
 
-                    IOUtils.toString(r); // drain the input
-                    s.shutdownInput();
-                } catch(IOException e) {
-                    LOGGER.log(WARNING, "Failed to serve a request from AI web server",e);
-                } finally {
-                    try {
-                        s.close();
-                    } catch (IOException e) {
-                        LOGGER.log(WARNING, "Failed to close a socket in AI web server",e);
+                            BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                            PrintStream out = new PrintStream(s.getOutputStream());
+                            String request = r.readLine();
+                            if(request.startsWith("GET /manifest.xml")) {
+                                out.println("HTTP/1.0 200 OK");
+                                out.println("Content-Type: text/xml");
+                                out.println("");
+                                out.println("<CriteriaList>");
+                                out.println("  <Version Number=\"0.5\"/>");
+                                out.println("</CriteriaList>");
+                            } else
+                            if(request.startsWith("POST /manifest.xml")) {
+                                out.println("HTTP/1.0 200 OK");
+                                out.println("Content-Type: text/xml");
+                                out.println("");
+
+                                String template = IOUtils.toString(getClass().getResourceAsStream("opensolaris-ai.xml"));
+                                Map<String,String> props = new HashMap<String, String>();
+                                props.put("userName","jack");
+                                props.put("rootPassword",Crypt.cryptMD5("abcdefgh","opensolaris"));
+                                props.put("timeZone", TimeZone.getDefault().getID());
+                                out.println(Util.replaceMacro(template,props));
+                            } else {
+                                out.println("HTTP/1.0 404 Not Found");
+                                out.println("Content-Type: text/html");
+                                out.println("");
+                                out.println("<html><body>This server only knows how to handle /manifest.xml</body></html>");
+                            }
+                            // close the write side
+                            out.flush();
+                            s.shutdownOutput();
+
+                            IOUtils.toString(r); // drain the input
+                            s.shutdownInput();
+                        } catch(IOException e) {
+                            LOGGER.log(WARNING, "Failed to serve a request from AI web server",e);
+                        } finally {
+                            try {
+                                s.close();
+                            } catch (IOException e) {
+                                LOGGER.log(WARNING, "Failed to close a socket in AI web server",e);
+                            }
+                        }
                     }
-                }
+                }.start();
             }
             LOGGER.fine(" AI web server thread exiting");
         }

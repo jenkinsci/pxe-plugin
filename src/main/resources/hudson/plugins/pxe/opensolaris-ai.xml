@@ -21,6 +21,7 @@
       </ai_pkg_repo_default_authority>
       <ai_packages>
       </ai_packages>
+      <ai_auto_reboot>true</ai_auto_reboot>
     </ai_manifest>
   </ai_embedded_manifest>
   <!-- this portion defines the system configuration -->

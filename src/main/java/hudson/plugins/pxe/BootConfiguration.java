@@ -99,6 +99,13 @@ public abstract class BootConfiguration extends AbstractModelObject implements D
     }
 
     /**
+     * Called before the {@link BootConfiguration} instances are let go because of the reconfiguration.
+     * This is a good place to clean up background threads, etc.
+     */
+    protected void shutdown() throws IOException {
+    }
+
+    /**
      * Returns the fragment to be merged into <tt>pxelinux.cfg/default</tt>.
      */
     public abstract String getPxeLinuxConfigFragment() throws IOException;
