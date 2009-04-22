@@ -71,7 +71,8 @@ public class RedHatBootCoonfiguration extends LinuxBootConfiguration {
      * Package list formatted in the kickstart format.
      */
     public String getPackageList() {
-        if(additionalPackages==null)    return "";
+        // returning empty line breaks CentOS, so return something harmless
+        if(additionalPackages==null)    return "# no additional packages";
         return Util.join(Arrays.asList(additionalPackages.split(" +")),"\n");
     }
 

@@ -1,0 +1,30 @@
+# compared to fedora version
+#  firewall --service is unsupported
+#  % end is unsupported
+
+install
+url --url=${absoluteUrl}/image
+lang ${locale}
+keyboard us
+network --bootproto dhcp
+rootpw  --iscrypted ${password}
+authconfig --enableshadow
+selinux --enforcing
+timezone --utc ${timeZone}
+bootloader --location=mbr
+reboot
+# wipe out HDD and start from scratch
+clearpart --all
+autopart
+text
+user --name=hudson --password=${password} --iscrypted
+
+%packages
+@admin-tools
+@base
+@core
+@editors
+@hardware-support
+@text-internet
+@java
+${packageList}
