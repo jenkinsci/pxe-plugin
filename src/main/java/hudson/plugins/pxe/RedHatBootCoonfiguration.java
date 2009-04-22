@@ -37,7 +37,7 @@ public class RedHatBootCoonfiguration extends LinuxBootConfiguration {
             password = Crypt.cryptMD5("abcdefgh",password);
         this.password = password;
 
-        this.additionalPackages = additionalPackages;
+        this.additionalPackages = Util.fixEmptyAndTrim(additionalPackages);
     }
 
     protected String getIdSeed() {
@@ -70,7 +70,7 @@ public class RedHatBootCoonfiguration extends LinuxBootConfiguration {
     /**
      * Package list formatted in the kickstart format.
      */
-    public String getPakcageList() {
+    public String getPackageList() {
         if(additionalPackages==null)    return "";
         return Util.join(Arrays.asList(additionalPackages.split(" +")),"\n");
     }
