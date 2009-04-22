@@ -24,7 +24,6 @@ user --name=hudson --password=${password} --iscrypted
 @base
 @core
 @editors
-@hardware-support
 @text-internet
 @java
 ${packageList}

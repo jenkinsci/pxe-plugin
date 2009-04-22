@@ -76,7 +76,11 @@ public abstract class BootConfiguration extends AbstractModelObject implements D
      * Convenience method to load a resource from the same place as Jelly views are loaded.
      */
     protected InputStream getResourceAsStream(String fileName) {
-        return getClass().getClassLoader().getResourceAsStream(getClass().getName().replace('.','/')+'/'+fileName);
+        for(Class c=getClass(); c!=null; c=c.getSuperclass()) {
+            InputStream s = c.getClassLoader().getResourceAsStream(c.getName().replace('.', '/') + '/' + fileName);
+            if(s!=null) return s;
+        }
+        return null; // not found
     }
 
     /**
