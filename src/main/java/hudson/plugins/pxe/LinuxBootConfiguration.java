@@ -78,7 +78,9 @@ public abstract class LinuxBootConfiguration extends IsoBasedBootConfiguration {
             public String resolve(String name) {
                 try {
                     if (context.containsKey(name)) return context.get(name).toString();
-                    return String.valueOf(ExpressionFactory.createExpression("it." + name).evaluate(context));
+                    Object o = ExpressionFactory.createExpression("it." + name).evaluate(context);
+                    if(o==null) return "";
+                    return String.valueOf(o);
                 } catch (Exception e) {
                     throw new Error(e); // tunneling. this must indicate a programming error
                 }
