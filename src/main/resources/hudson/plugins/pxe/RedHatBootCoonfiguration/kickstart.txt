@@ -15,7 +15,7 @@ reboot
 clearpart --all
 autopart
 text
-user --name=hudson --password=${password}
+user --name=hudson --password=${password} --iscrypted
 
 %packages
 @admin-tools
