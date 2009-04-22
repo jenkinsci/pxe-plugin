@@ -11,6 +11,11 @@ selinux --enforcing
 timezone --utc ${timeZone}
 bootloader --location=mbr
 reboot
+# wipe out HDD and start from scratch
+clearpart --all
+autopart
+text
+user --name=hudson --password=${password}
 
 %packages
 @admin-tools
@@ -22,3 +27,4 @@ reboot
 @hardware-support
 @java
 ${packageList}
+%end

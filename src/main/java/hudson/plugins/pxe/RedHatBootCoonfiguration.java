@@ -67,7 +67,11 @@ public class RedHatBootCoonfiguration extends LinuxBootConfiguration {
         serveMacroExpandedResource(rsp,"kickstart.txt");
     }
 
+    /**
+     * Package list formatted in the kickstart format.
+     */
     public String getPakcageList() {
+        if(additionalPackages==null)    return "";
         return Util.join(Arrays.asList(additionalPackages.split(" +")),"\n");
     }
 
