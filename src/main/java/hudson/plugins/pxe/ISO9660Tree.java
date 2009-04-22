@@ -50,10 +50,16 @@ public class ISO9660Tree implements HttpResponse {
                 w.println("</body></html>");
             } else {
                 InputStream in = e.read();
-                rsp.serveFile(req, in, e.getLastModifiedTime(), -1, e.getSize(), e.getName() );
+                rsp.serveFile(req, in, e.getLastModifiedTime(), 1000L*1000*1000, e.getSize(), getMimeTypeName(e));
             }
         } finally {
             fs.close();
         }
+    }
+
+    private String getMimeTypeName(FileEntry e) {
+        if(e.getName().endsWith(".rpm")) // force the RPM package type
+            return "mime-type:application/x-redhat-package-manager";
+        return e.getName();
     }
 }
