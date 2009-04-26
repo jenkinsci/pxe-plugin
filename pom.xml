@@ -47,6 +47,6 @@
 
   <properties>
     <pxeboot.version>1.0</pxeboot.version>
-    <hudson.version>1.301-SNAPSHOT</hudson.version>
+    <hudson.version>1.301</hudson.version>
   </properties>
 </project>
