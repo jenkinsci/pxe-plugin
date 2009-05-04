@@ -66,12 +66,17 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         return "orange-square.gif";
     }
 
+    @Override
+    public String getDescription() {
+        return "Simplify the slave installation by network installing them (AKA PXE boot)";
+    }
+
     public String getUrlName() {
         return "pxe";
     }
 
     public String getDisplayName() {
-        return "PXE Boot management";
+        return "Network Slave Installation Management";
     }
 
     public String getRootUserName() {
