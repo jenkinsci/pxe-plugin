@@ -13,14 +13,14 @@ import java.io.File;
  *
  * @author Kohsuke Kawaguchi
  */
-public class CentOSBootConfiguration extends RedHatBootCoonfiguration {
+public class CentOSBootConfiguration extends RedHatBootConfiguration {
     @DataBoundConstructor
     public CentOSBootConfiguration(File iso, String password, String additionalPackages) {
         super(iso, password, additionalPackages);
     }
 
     @Extension
-    public static class DescriptorImpl extends RedHatBootCoonfiguration.DescriptorImpl {
+    public static class DescriptorImpl extends RedHatBootConfiguration.DescriptorImpl {
         public String getDisplayName() {
             return "CentOS";
         }

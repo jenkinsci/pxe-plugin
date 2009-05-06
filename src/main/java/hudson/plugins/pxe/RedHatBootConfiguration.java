@@ -24,12 +24,12 @@ import java.util.Arrays;
  *
  * @author Kohsuke Kawaguchi
  */
-public class RedHatBootCoonfiguration extends LinuxBootConfiguration {
+public class RedHatBootConfiguration extends LinuxBootConfiguration {
     public final String additionalPackages;
     public final String password;
 
     @DataBoundConstructor
-    public RedHatBootCoonfiguration(File iso, String password, String additionalPackages) {
+    public RedHatBootConfiguration(File iso, String password, String additionalPackages) {
         super(iso);
 
         if(Util.fixEmptyAndTrim(password)==null)    password="hudson";
@@ -147,5 +147,5 @@ public class RedHatBootCoonfiguration extends LinuxBootConfiguration {
         }
     }
 
-    private static final Logger LOGGER = Logger.getLogger(RedHatBootCoonfiguration.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(RedHatBootConfiguration.class.getName());
 }
