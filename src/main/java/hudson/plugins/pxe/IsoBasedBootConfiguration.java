@@ -16,6 +16,9 @@ import static hudson.util.FormValidation.error;
 import hudson.model.Hudson;
 
 /**
+ * Convenient partial {@link BootConfiguration} implementation that uses
+ * an ISO file as the backend of the image storage.
+ *
  * @author Kohsuke Kawaguchi
  */
 public abstract class IsoBasedBootConfiguration extends BootConfiguration {
@@ -95,6 +98,12 @@ public abstract class IsoBasedBootConfiguration extends BootConfiguration {
             }
         }
 
+        /**
+         * Obtain the identifier that represents a release information.
+         *
+         * @throws FormValidation
+         *      if the file isn't the expected file.
+         */
         protected abstract String getReleaseInfo(File iso) throws IOException;
     }
 }
