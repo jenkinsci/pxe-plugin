@@ -8,7 +8,7 @@
   </parent>
   
   <artifactId>pxe</artifactId>
-  <version>1.2</version>
+  <version>1.3-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Hudson PXE netboot plugin</name>
 
@@ -28,10 +28,4 @@
   <properties>
     <pxeboot.version>1.0</pxeboot.version>
   </properties>
-
-  <scm>
-    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/pxe-1.2</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/pxe-1.2</developerConnection>
-    <url>https://hudson.dev.java.net/source/browse/hudson/hudson/plugins/pxe/tags/pxe-1.2</url>
-  </scm>
 </project>
