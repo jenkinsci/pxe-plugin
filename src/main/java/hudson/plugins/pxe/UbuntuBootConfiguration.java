@@ -12,7 +12,9 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URL;
+import java.net.MalformedURLException;
 import java.util.LinkedHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,9 +31,16 @@ public class UbuntuBootConfiguration extends LinuxBootConfiguration {
     public final String additionalPackages;
     public final String userName;
     public final String password;
+    public final String lateCommand;
+    public final String customMirror;
+    /**
+     * User-defined preseed content.
+     * Useful to override default settings
+     */
+    public final String userContent;
 
     @DataBoundConstructor
-    public UbuntuBootConfiguration(File iso, String userName, String password, String additionalPackages) {
+    public UbuntuBootConfiguration(File iso, String userName, String password, String additionalPackages, String lateCommand, String customMirror, String userContent) {
         super(iso);
 
         if(Util.fixEmptyAndTrim(userName)==null)    userName="hudson";
@@ -43,6 +52,13 @@ public class UbuntuBootConfiguration extends LinuxBootConfiguration {
         this.password = password;
 
         this.additionalPackages = additionalPackages;
+        
+        if(lateCommand!=null && !lateCommand.startsWith("#!"))
+            lateCommand = "#!/bin/bash\n"+lateCommand;
+        this.lateCommand = lateCommand;
+
+        this.customMirror = Util.fixEmpty(customMirror);
+        this.userContent = Util.fixEmpty(userContent);
     }
 
     protected String getIdSeed() {
@@ -80,15 +96,25 @@ public class UbuntuBootConfiguration extends LinuxBootConfiguration {
      * Ubuntu repository mirror, meaning the ISO image.
      */
     public String getMirrorHostName() throws IOException {
-        URL url = new URL(Hudson.getInstance().getRootUrl());
-        if(url.getPort()!=80)
+        URL url = getMirrorUrl();
+        if(url.getPort()!=80 && url.getPort()!=-1)
             return url.getHost()+':'+url.getPort();
         return url.getHost();
     }
 
     public String getMirrorDirectory() throws IOException {
-        URL url = new URL(Hudson.getInstance().getRootUrl());
-        return url.getPath()+"pxe/"+getUrl()+"/image";
+        return getMirrorUrl().getPath();
+    }
+
+    private URL getMirrorUrl() throws MalformedURLException {
+        return new URL(customMirror!=null ? customMirror : Hudson.getInstance().getRootUrl()+"pxe/"+getUrl()+"/image");
+    }
+
+    public void doLateCommand(StaplerResponse rsp) throws IOException {
+        rsp.setContentType("text/plain;charset=UTF-8");
+        PrintWriter w = rsp.getWriter();
+        w.print(Util.fixNull(lateCommand));
+        w.close();
     }
 
     @Extension

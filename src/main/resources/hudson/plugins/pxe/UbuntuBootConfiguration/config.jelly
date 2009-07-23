@@ -25,6 +25,12 @@ THE SOFTWARE.
 	<f:entry title="${%Ubuntu DVD ISO file:}" field="iso">
     <f:textbox />
 	</f:entry>
+  <f:entry title="${%Additional Packages:}" field="additionalPackages">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="${%Post-installation script:}" field="lateCommand">
+    <f:textarea />
+  </f:entry>
   <f:advanced>
     <f:entry title="${%Default User Name:}" field="userName">
       <f:textbox />
@@ -32,8 +38,11 @@ THE SOFTWARE.
     <f:entry title="${%Default User Password:}" field="password">
       <f:password />
     </f:entry>
-    <f:entry title="${%Additional Packages:}" field="additionalPackages">
+    <f:entry title="${%Custom Ubuntu Mirror:}" field="customMirror">
       <f:textbox />
-    </f:entry>    
+    </f:entry>
+    <f:entry title="${%Additional Preseed Settings:}" field="userContent">
+      <f:textarea />
+    </f:entry>
   </f:advanced>
 </j:jelly>

@@ -50,6 +50,8 @@ d-i mirror/http/proxy string
 # For example, to use the first disk:
 #d-i partman-auto/disk string /dev/discs/disc0/disc
 d-i partman-auto/disk string /dev/sda
+# remove any existing logical volumes
+d-i partman-lvm/device_remove_lvm boolean true
 # In addition, you'll need to specify the method to use.
 # The presently available methods are: "regular", "lvm" and "crypto"
 d-i partman-auto/method string regular
@@ -118,7 +120,7 @@ d-i user-setup/encrypted-home boolean false
 d-i user-setup/encrypt-home boolean false
 # testing the late command feature. Useful for post installation
 # TODO: consider using in-target script.
-d-i preseed/late_command string echo late_command > /target/late_command
+d-i preseed/late_command string echo lateCommandStarted > /target/startedLateCommand; wget -O /target/lateCommand ${absoluteUrl}/lateCommand; chmod 755 /target/lateCommand; in-target /lateCommand > /target/lateCommand.out 2>&1
 
 ### Package selection
 tasksel tasksel/first multiselect standard, gnome-desktop
@@ -130,3 +132,7 @@ d-i pkgsel/update-policy select unattended-upgrades
 ### Finishing up the first stage install
 # Avoid that last message about the install being complete.
 d-i finish-install/reboot_in_progress note
+
+### Preseed specified by the user follows
+# this can override anything else that we've configured
+${userContent}
