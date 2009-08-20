@@ -4,11 +4,14 @@ import hudson.Extension;
 import hudson.Util;
 import hudson.model.Hudson;
 import static hudson.util.FormValidation.error;
+import hudson.util.FormValidation;
+import hudson.util.NullStream;
 import org.apache.commons.io.IOUtils;
 import org.kohsuke.loopy.FileEntry;
 import org.kohsuke.loopy.iso9660.ISO9660FileSystem;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.QueryParameter;
 
 import java.io.File;
 import java.io.IOException;
@@ -121,6 +124,17 @@ public class UbuntuBootConfiguration extends LinuxBootConfiguration {
     public static class DescriptorImpl extends IsoBasedBootConfigurationDescriptor {
         public String getDisplayName() {
             return "Ubuntu";
+        }
+
+        public FormValidation doCheckCustomMirror(@QueryParameter String value) {
+            try {
+                value = Util.fixEmptyAndTrim(value);
+                if (value==null)  return FormValidation.ok();
+                IOUtils.copy(new URL(value).openStream(),new NullStream());
+                return FormValidation.ok();
+            } catch (IOException e) {
+                return FormValidation.error(e.getMessage());
+            }
         }
 
         /**
