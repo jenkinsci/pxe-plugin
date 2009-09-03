@@ -3,12 +3,14 @@ package hudson.plugins.pxe;
 import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import org.jvnet.hudson.proxy_dhcp.ProxyDhcpService;
+import org.jvnet.hudson.proxy_dhcp.DHCPPacket;
 import org.jvnet.hudson.tftpd.PathResolver;
 import org.jvnet.hudson.tftpd.TFTPServer;
 
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.DatagramPacket;
 import java.util.logging.Logger;
 
 /**
@@ -19,17 +21,24 @@ import java.util.logging.Logger;
  */
 public class PXEBootProcess implements Callable<DaemonService, IOException> {
     private final PathResolver resolver;
+    private final DHCPPacketFilter dhcpFilter;
     private final String tftpAddress;
 
-    public PXEBootProcess(PathResolver resolver, String tftpAddress) {
+    public PXEBootProcess(PathResolver resolver, DHCPPacketFilter dhcpFilter, String tftpAddress) {
         this.resolver = resolver;
+        this.dhcpFilter = dhcpFilter;
         this.tftpAddress = tftpAddress;
     }
 
     public DaemonService call() throws IOException {
         // has to bind to the "any address" to receive packets, at least on Ubuntu
         LOGGER.info("Starting a DHCP proxy service");
-        final Thread dhcp = start(new ProxyDhcpService((Inet4Address)InetAddress.getByName(tftpAddress),"pxelinux.0"));
+        final Thread dhcp = start(new ProxyDhcpService((Inet4Address)InetAddress.getByName(tftpAddress),"pxelinux.0") {
+            @Override
+            protected boolean shallWeRespond(DatagramPacket datagram, DHCPPacket packet) {
+                return dhcpFilter.shallWeRespond(packet.chaddr);
+            }
+        });
 
         // serve up resources
         LOGGER.info("Starting a TFTP service");

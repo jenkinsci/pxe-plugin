@@ -35,7 +35,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Collections;
 import java.util.logging.Logger;
+import java.text.ParseException;
 
 /**
  * This object is bound to "/pxe" and handles all the UI work.
@@ -55,6 +60,21 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
     // running state
     private transient VirtualChannel channel;
     private transient DaemonService daemonService;
+
+    /**
+     * If true, only respond to known MAC addresses that the administrator approved.
+     */
+    private boolean respondSelectively;
+
+    /**
+     * Mac addresses that we'll respond
+     */
+    private transient Set<MacAddress> approvedMacAddresses = new HashSet<MacAddress>();
+
+    /**
+     * Mac addresses that we've seen sending out DHCP request. This is a set but it's chronologically ordered.
+     */
+    private transient LinkedHashSet<MacAddress> discoveredMacAddresses = new LinkedHashSet<MacAddress>();
 
     public PXE() throws IOException, InterruptedException {
         load();
@@ -100,6 +120,25 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         return tftpAddress;
     }
 
+    public boolean isRespondSelectively() {
+        return respondSelectively;
+    }
+
+    public boolean isRespondToAll() {
+        return !respondSelectively;
+    }
+
+    public void setRespondSelectively(boolean respondSelectively) throws IOException {
+        this.respondSelectively = respondSelectively;
+        save();
+    }
+
+    public Set<MacAddress> getAddressesThatRequireApproval() {
+        discoveredMacAddresses.removeAll(approvedMacAddresses);
+        return Collections.unmodifiableSet(discoveredMacAddresses);
+    }
+
+
     public VirtualChannel getChannel() {
         return channel;
     }
@@ -131,7 +170,26 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
         TaskListener listener = new StreamTaskListener(getLogFile());
         channel = SU.start(listener, rootUserName, rootPassword == null ? null : rootPassword.toString());
         // export explicitly, or else it'll be unexported upon return
-        daemonService = channel.call(new PXEBootProcess(new PathResolverImpl().export(channel), tftpAddress));
+        daemonService = channel.call(new PXEBootProcess(
+                new PathResolverImpl().export(channel),
+                channel.export(DHCPPacketFilter.class, createDHCPPacketFilter()),
+                tftpAddress));
+    }
+
+    private DHCPPacketFilter createDHCPPacketFilter() {
+        return new DHCPPacketFilter() {
+            public boolean shallWeRespond(byte[] address) {
+                if(isRespondToAll())    return true;
+
+                MacAddress a = new MacAddress(address);
+                if (approvedMacAddresses.contains(a))   return true;
+
+                // force the insertion into tail
+                discoveredMacAddresses.remove(a);
+                discoveredMacAddresses.add(a);
+                return false;
+            }
+        };
     }
 
     public void setRootAccount(String userName, Secret password) throws IOException {
@@ -194,6 +252,7 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
                 setTftpAddress(form.getString("tftpAddress"));
             else
                 setTftpAddress(getNICs().get(0).adrs.getHostAddress());
+            setRespondSelectively(!form.has("respondToAll"));
             for (BootConfiguration c : bootConfigurations)
                 c.shutdown();
             bootConfigurations.rebuildHetero(req,form,getDescriptors(),"configuration");
@@ -206,6 +265,28 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
 
         restartPXE();
 
+        rsp.sendRedirect(".");
+    }
+
+    public void doDoApprove(StaplerRequest req, StaplerResponse rsp) throws ServletException, ParseException, IOException {
+        JSONObject form = req.getSubmittedForm();
+        if (form.has("mac")) {
+            JSONObject j = form.getJSONObject("mac");
+            for (String key : (Set<String>) j.keySet()) {
+                if (j.getBoolean(key))
+                    approvedMacAddresses.add(new MacAddress(key));
+            }
+        }
+        String additional = (String)form.get("additional");
+        if (additional!=null) {
+            for (String key : additional.split("\n")) {
+                key = key.trim();
+                if (key.length()>0)
+                    approvedMacAddresses.add(new MacAddress(key));
+            }
+        }
+        if (req.hasParameter("reset"))
+            approvedMacAddresses.clear();
         rsp.sendRedirect(".");
     }
 

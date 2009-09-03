@@ -1,0 +1,15 @@
+<div>
+    If this option is set, this service will respond to all the network boot requests that's seen on the current network.
+    This requires less administration overhead, but if you have other network boot services on the network, Hudson
+    will interfere with them.
+
+    <p>
+    In such a situation, de-select this option, to make Hudson selectively respond to network boot requests.
+    Once this option is de-selected, Hudson will record all
+    <a href="http://en.wikipedia.org/wiki/MAC_address">the MAC addresses</a> of hosts that are requesting network boots,
+    and an administrator has to explicitly approve those MAC addresses before Hudson starts responding to them.
+
+    <p>
+    In this way, each network booted machine has to be manually approved, but you can have multiple network boot
+    services that co-exist.
+</div>

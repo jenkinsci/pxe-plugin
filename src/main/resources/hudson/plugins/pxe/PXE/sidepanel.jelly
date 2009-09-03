@@ -30,6 +30,9 @@ THE SOFTWARE.
       <l:task icon="images/24x24/search.gif" href="${rootURL}/pxe/" title="${%Status}" />
       <l:task icon="images/24x24/terminal.gif" href="${rootURL}/pxe/console" title="${%Console}" />
       <l:task icon="images/24x24/setting.gif" href="${rootURL}/pxe/configure" title="${%Configure}" />
+      <j:if test="${it.respondSelectively}">
+        <l:task icon="images/24x24/setting.gif" href="${rootURL}/pxe/approve" title="${%Approve MAC Address}" />
+      </j:if>
     </l:tasks>
   </l:side-panel>
 </j:jelly>

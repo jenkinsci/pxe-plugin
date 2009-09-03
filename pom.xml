@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jvnet.hudson.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.318</version>
+    <version>1.322</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   
@@ -26,6 +26,6 @@
   </dependencies>
 
   <properties>
-    <pxeboot.version>1.0</pxeboot.version>
+    <pxeboot.version>1.3</pxeboot.version>
   </properties>
 </project>
