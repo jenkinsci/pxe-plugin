@@ -66,7 +66,7 @@ public abstract class BootConfiguration extends AbstractModelObject implements D
      *      String like "http://foobar/path/to/hudson/pxe/configuration/me" without trailing '/'.
      */
     public final String getAbsoluteUrl() {
-        return defaulted(ROOT_URL,Hudson.getInstance().getRootUrl())+"pxe/"+getUrl();
+        return defaulted(PXE.ROOT_URL,Hudson.getInstance().getRootUrl())+"pxe/"+getUrl();
     }
 
     public BootConfigurationDescriptor getDescriptor() {
@@ -129,9 +129,4 @@ public abstract class BootConfiguration extends AbstractModelObject implements D
     public static DescriptorExtensionList<BootConfiguration, BootConfigurationDescriptor> all() {
         return Hudson.getInstance().getDescriptorList(BootConfiguration.class);
     }
-
-    /**
-     * If for some reason the default root URL won't do --- for example, maybe you need to address the server by its IP.
-     */
-    public static String ROOT_URL = System.getProperty(BootConfiguration.class.getName()+".rootURL");
 }

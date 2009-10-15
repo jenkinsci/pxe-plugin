@@ -405,4 +405,9 @@ public class PXE extends ManagementLink implements StaplerProxy, Describable<PXE
     }
 
     private static final Logger LOGGER = Logger.getLogger(PXE.class.getName());
+
+    /**
+     * If for some reason the default root URL won't do --- for example, maybe you need to address the server by its IP.
+     */
+    public static String ROOT_URL = System.getProperty(PXE.class.getName()+".rootURL");
 }
