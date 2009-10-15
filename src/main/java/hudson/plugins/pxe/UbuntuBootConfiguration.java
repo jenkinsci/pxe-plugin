@@ -2,7 +2,6 @@ package hudson.plugins.pxe;
 
 import hudson.Extension;
 import hudson.Util;
-import hudson.model.Hudson;
 import static hudson.util.FormValidation.error;
 import hudson.util.FormValidation;
 import hudson.util.NullStream;
@@ -110,7 +109,7 @@ public class UbuntuBootConfiguration extends LinuxBootConfiguration {
     }
 
     private URL getMirrorUrl() throws MalformedURLException {
-        return new URL(customMirror!=null ? customMirror : Hudson.getInstance().getRootUrl()+"pxe/"+getUrl()+"/image");
+        return new URL(customMirror!=null ? customMirror : getAbsoluteUrl()+"/image");
     }
 
     public void doLateCommand(StaplerResponse rsp) throws IOException {
