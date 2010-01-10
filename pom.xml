@@ -6,12 +6,19 @@
     <version>1.322</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  
+
   <artifactId>pxe</artifactId>
   <version>1.4-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Hudson PXE netboot plugin</name>
   <url>http://wiki.hudson-ci.org/display/HUDSON/PXE+Plugin</url>
+
+  <developers>
+    <developer>
+      <id>kohsuke</id>
+      <name>Kohsuke Kawaguchi</name>
+    </developer>
+  </developers>
 
   <dependencies>
     <dependency>
