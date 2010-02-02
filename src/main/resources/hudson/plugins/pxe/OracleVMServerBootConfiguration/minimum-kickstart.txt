@@ -1,0 +1,4 @@
+# only seed some very basic information
+install
+url --url=${absoluteUrl}/image
+timezone --utc ${timeZone}

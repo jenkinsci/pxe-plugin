@@ -44,6 +44,9 @@ public class RedHatBootConfiguration extends LinuxBootConfiguration {
         return getRelease().replaceAll("[ ()]","");
     }
 
+    /**
+     * The root directory that we expose to TFTP.
+     */
     protected FileEntry getTftpIsoMountDir(ISO9660FileSystem fs) throws IOException {
         return fs.get("/images/pxeboot");
     }
