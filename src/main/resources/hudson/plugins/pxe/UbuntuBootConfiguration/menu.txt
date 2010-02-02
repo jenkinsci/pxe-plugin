@@ -16,6 +16,13 @@ label autoinstall
 	kernel ${id}/linux
 	append vga=normal initrd=${id}/initrd.gz auto url=${absoluteUrl}/preseed locale=${locale} debian-installer/keymap=us -- quiet
 
+# doing live CD emulation requires NFS server
+#label live
+#	menu label Live CD Environment
+#    kernel ${id}/iso/casper/vmlinuz
+#    append url=${absoluteUrl}/image/preseed/ubuntu.seed boot=casper netboot=nfs nfsroot=server:/path/to/livecd initrd=${id}/iso/casper/initrd.lz quiet splash --
+
+
 label mainmenu
     menu label ^Back to main menu
     kernel vesamenu.c32
