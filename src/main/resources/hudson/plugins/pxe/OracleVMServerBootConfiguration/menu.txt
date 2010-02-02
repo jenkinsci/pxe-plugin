@@ -1,18 +1,24 @@
-default linux
-prompt 1
-timeout 600
-display ${id}/isolinux/boot.msg
-F1 ${id}/isolinux/boot.msg
-F2 ${id}/isolinux/options.msg
-F3 ${id}/isolinux/general.msg
-F4 ${id}/isolinux/param.msg
-F5 ${id}/isolinux/rescue.msg
+menu background ${id}/isolinux/splash.lss
+menu title ${release}
+menu color border 0 #ffffffff #00000000
+menu color sel 7 #ffffffff #ff000000
+menu color title 0 #ffffffff #00000000
+menu color tabmsg 0 #ffffffff #00000000
+menu color unsel 0 #ffffffff #00000000
+menu color hotsel 0 #ff000000 #ffffffff
+menu color hotkey 7 #ffffffff #ff000000
+menu color scrollbar 0 #ffffffff #00000000
+
 label linux
+  menu label ^Interactive Install
   kernel ${id}/images/pxeboot/vmlinuz
   append initrd=${id}/images/pxeboot/initrd.img mem=32GB ks=${absoluteUrl}/minimumKickstart
+
 label text
+  menu label ^Text Install
   kernel ${id}/images/pxeboot/vmlinuz
   append initrd=${id}/images/pxeboot/initrd.img text mem=32GB ks=${absoluteUrl}/minimumKickstart
-label ks
-  kernel ${id}/images/pxeboot/vmlinuz
-  append ks initrd=${id}/images/pxeboot/initrd.img mem=32GB
+
+label mainmenu
+    menu label ^Back to main menu
+    kernel vesamenu.c32
