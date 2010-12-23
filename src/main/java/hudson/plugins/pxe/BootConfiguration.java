@@ -127,6 +127,6 @@ public abstract class BootConfiguration extends AbstractModelObject implements D
      * Returns all the registered {@link BootConfigurationDescriptor}s.
      */
     public static DescriptorExtensionList<BootConfiguration, BootConfigurationDescriptor> all() {
-        return Hudson.getInstance().getDescriptorList(BootConfiguration.class);
+        return Hudson.getInstance().<BootConfiguration,BootConfigurationDescriptor>getDescriptorList(BootConfiguration.class);
     }
 }
